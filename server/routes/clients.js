@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
+const rateLimit = require('express-rate-limit');
 
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
@@ -8,6 +9,15 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'office_management',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
+});
+
+// Rate limiter for delete requests (max 10 requests per 15 minutes per IP)
+const deleteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 delete requests per windowMs
+  message: {
+    error: 'Too many delete requests from this IP, please try again later'
+  }
 });
 
 // Get all clients
@@ -215,7 +225,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete client (soft delete)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', deleteLimiter, async (req, res) => {
   try {
     const { id } = req.params;
 
