@@ -3,6 +3,13 @@ const router = express.Router();
 const { Pool } = require('pg');
 const rateLimit = require('express-rate-limit');
 
+// Rate limiter for update (PUT) requests
+const updateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 update requests per windowMs
+  message: 'Too many update requests from this IP, please try again later'
+});
+
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
@@ -163,7 +170,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update client
-router.put('/:id', async (req, res) => {
+router.put('/:id', updateLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const {
