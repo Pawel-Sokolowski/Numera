@@ -1,0 +1,13 @@
+{
+  "version": "2023",
+  "fields": {
+    "employeeName": { "pdfField": "pracownik_nazwisko_imie", "page": 1, "x": 150, "y": 720 },
+    "employeePESEL": { "pdfField": "pracownik_pesel", "page": 1, "x": 150, "y": 695 },
+    "employeeAddress": { "pdfField": "pracownik_adres", "page": 1, "x": 150, "y": 670 },
+    "employerName": { "pdfField": "pracodawca_nazwa", "page": 1, "x": 150, "y": 600 },
+    "employerNIP": { "pdfField": "pracodawca_nip", "page": 1, "x": 150, "y": 575 },
+    "employmentDate": { "pdfField": "data_zatrudnienia", "page": 1, "x": 150, "y": 500 },
+    "taxDeduction": { "pdfField": "odliczenie", "page": 1, "x": 400, "y": 450 }
+  },
+  "calculations": {}
+}

@@ -1,0 +1,12 @@
+{
+  "version": "2023",
+  "fields": {
+    "principalName": { "pdfField": "mocodawca_nazwa", "page": 1, "x": 150, "y": 720 },
+    "principalNIP": { "pdfField": "mocodawca_nip", "page": 1, "x": 150, "y": 695 },
+    "attorneyName": { "pdfField": "pelnomocnik_nazwa", "page": 1, "x": 150, "y": 560 },
+    "attorneyPESEL": { "pdfField": "pelnomocnik_pesel", "page": 1, "x": 150, "y": 535 },
+    "scope": { "pdfField": "zakres", "page": 1, "x": 50, "y": 420 },
+    "issueDate": { "pdfField": "data_wystawienia", "page": 1, "x": 150, "y": 150 }
+  },
+  "calculations": {}
+}

@@ -1,0 +1,10 @@
+{
+  "version": "2023",
+  "fields": {
+    "payerName": { "pdfField": "platnik_nazwa", "page": 1, "x": 150, "y": 720 },
+    "payerNIP": { "pdfField": "platnik_nip", "page": 1, "x": 150, "y": 695 },
+    "declarationDate": { "pdfField": "data_zlozenia", "page": 1, "x": 150, "y": 670 },
+    "amount": { "pdfField": "kwota", "page": 1, "x": 400, "y": 650 }
+  },
+  "calculations": {}
+}

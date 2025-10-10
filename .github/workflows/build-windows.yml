@@ -1,0 +1,83 @@
+---
+name: Build Windows Executable
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - installer
+          - portable
+
+jobs:
+  build-windows:
+    name: Build Windows Executable
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React application
+        run: npm run build
+
+      - name: Build Windows executable
+        run: npm run dist-win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List build output
+        run: dir dist-electron
+        shell: cmd
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Office-Management-System-Installer
+          path: dist-electron/*.exe
+          retention-days: 30
+
+      - name: Upload build summary
+        run: |
+          echo "### ✅ Build Completed Successfully!" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Your Windows executable has been built and is" \
+            "available in the artifacts." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 📦 Files Created:" >> $GITHUB_STEP_SUMMARY
+          echo "- Office Management System Setup.exe" \
+            "(Full installer)" >> $GITHUB_STEP_SUMMARY
+          echo "- Office Management System-portable.exe" \
+            "(Portable version)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 📥 How to Download:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Click on the 'Summary' tab above" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "2. Scroll to 'Artifacts' section" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "3. Click 'Office-Management-System-Installer'" \
+            "to download" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 🚀 Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download the artifact (it will be a .zip file)" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "2. Extract the .zip file" >> $GITHUB_STEP_SUMMARY
+          echo "3. Run the .exe installer" >> $GITHUB_STEP_SUMMARY
+          echo "4. Follow the installation wizard" \
+            >> $GITHUB_STEP_SUMMARY
+        shell: bash

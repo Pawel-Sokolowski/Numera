@@ -1,0 +1,27 @@
+{
+  "version": "2023",
+  "fields": {
+    "taxpayerName": { "pdfField": "nazwisko_imie", "page": 1, "x": 150, "y": 720 },
+    "taxpayerId": { "pdfField": "pesel", "page": 1, "x": 150, "y": 695 },
+    "taxpayerNIP": { "pdfField": "nip", "page": 1, "x": 150, "y": 670 },
+    "taxpayerAddress": { "pdfField": "ulica", "page": 1, "x": 150, "y": 645 },
+    "taxpayerCity": { "pdfField": "miasto", "page": 1, "x": 150, "y": 620 },
+    "taxpayerPostalCode": { "pdfField": "kod_pocztowy", "page": 1, "x": 100, "y": 620 },
+    "taxOffice": { "pdfField": "urzad_skarbowy", "page": 1, "x": 150, "y": 595 },
+    "employmentIncome": { "pdfField": "przychod_stosunku_pracy", "page": 2, "x": 400, "y": 650 },
+    "civilContractIncome": { "pdfField": "przychod_umowy_cywilnoprawne", "page": 2, "x": 400, "y": 630 },
+    "totalIncome": { "pdfField": "suma_dochodow", "page": 2, "x": 400, "y": 600 },
+    "childDeduction": { "pdfField": "odliczenie_dzieci", "page": 3, "x": 400, "y": 500 },
+    "numberOfChildren": { "pdfField": "liczba_dzieci", "page": 3, "x": 350, "y": 500 },
+    "taxBase": { "pdfField": "podstawa_obliczenia", "page": 3, "x": 400, "y": 450 },
+    "taxDue": { "pdfField": "podatek_nalezny", "page": 3, "x": 400, "y": 430 },
+    "taxToPay": { "pdfField": "podatek_do_zaplaty", "page": 3, "x": 400, "y": 400 }
+  },
+  "calculations": {
+    "totalIncome": "employmentIncome + civilContractIncome",
+    "totalTaxDeduction": "childDeduction * numberOfChildren",
+    "taxBase": "totalIncome - totalTaxDeduction",
+    "taxDue": "taxBase * 0.17",
+    "taxToPay": "taxDue - taxPaid"
+  }
+}

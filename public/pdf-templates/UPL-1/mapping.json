@@ -1,0 +1,27 @@
+{
+  "version": "2023",
+  "fields": {
+    "principalName": { "pdfField": "mocodawca_nazwa", "page": 1, "x": 150, "y": 720 },
+    "principalNIP": { "pdfField": "mocodawca_nip", "page": 1, "x": 150, "y": 695 },
+    "principalREGON": { "pdfField": "mocodawca_regon", "page": 1, "x": 150, "y": 670 },
+    "principalAddress": { "pdfField": "mocodawca_adres", "page": 1, "x": 150, "y": 645 },
+    "principalCity": { "pdfField": "mocodawca_miasto", "page": 1, "x": 150, "y": 620 },
+    "attorneyName": { "pdfField": "pelnomocnik_nazwa", "page": 1, "x": 150, "y": 560 },
+    "attorneyPESEL": { "pdfField": "pelnomocnik_pesel", "page": 1, "x": 150, "y": 535 },
+    "attorneyAddress": { "pdfField": "pelnomocnik_adres", "page": 1, "x": 150, "y": 510 },
+    "attorneyCity": { "pdfField": "pelnomocnik_miasto", "page": 1, "x": 150, "y": 485 },
+    "scope1": { "pdfField": "zakres_1", "page": 1, "x": 50, "y": 420 },
+    "scope2": { "pdfField": "zakres_2", "page": 1, "x": 50, "y": 400 },
+    "scope3": { "pdfField": "zakres_3", "page": 1, "x": 50, "y": 380 },
+    "scope4": { "pdfField": "zakres_4", "page": 1, "x": 50, "y": 360 },
+    "scope5": { "pdfField": "zakres_5", "page": 1, "x": 50, "y": 340 },
+    "scope6": { "pdfField": "zakres_6", "page": 1, "x": 50, "y": 320 },
+    "startDate": { "pdfField": "data_od", "page": 1, "x": 100, "y": 280 },
+    "endDate": { "pdfField": "data_do", "page": 1, "x": 250, "y": 280 },
+    "taxOffice": { "pdfField": "urzad_skarbowy", "page": 1, "x": 150, "y": 250 },
+    "issueDate": { "pdfField": "data_wystawienia", "page": 1, "x": 150, "y": 150 },
+    "principalSignature": { "pdfField": "podpis_mocodawcy", "page": 1, "x": 100, "y": 100 },
+    "attorneySignature": { "pdfField": "podpis_pelnomocnika", "page": 1, "x": 350, "y": 100 }
+  },
+  "calculations": {}
+}

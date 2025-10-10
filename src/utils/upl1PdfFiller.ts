@@ -1,0 +1,257 @@
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { Client, User } from '../types/client';
+
+/**
+ * UPL-1 PDF Form Filler
+ * 
+ * Fills the official UPL-1 form (Pełnomocnictwo do Urzędu Skarbowego)
+ * by drawing text at specific coordinates on the official PDF template.
+ * 
+ * Coordinates are measured from bottom-left corner (0,0) as per PDF standard.
+ * The UPL-1 form is A4 size: 595x842 points.
+ */
+
+export interface UPL1Data {
+  client: Client;
+  employee: User;
+  scope?: string[];
+  startDate?: string;
+  endDate?: string;
+  taxOffice?: string;
+}
+
+/**
+ * Field coordinates for UPL-1 form
+ * These coordinates are based on the official PDF form layout
+ * Y coordinates are from bottom of page (842 - visual_y_from_top)
+ */
+const UPL1_FIELD_COORDINATES = {
+  // Page 1 - Main form fields
+  // Mocodawca (Principal) section - typically around y=700-750 from bottom
+  principalName: { x: 150, y: 720 },
+  principalNIP: { x: 150, y: 695 },
+  principalREGON: { x: 150, y: 670 },
+  principalAddress: { x: 150, y: 645 },
+  principalCity: { x: 150, y: 620 },
+  
+  // Pełnomocnik (Attorney) section - typically around y=500-580 from bottom
+  attorneyName: { x: 150, y: 560 },
+  attorneyPESEL: { x: 150, y: 535 },
+  attorneyAddress: { x: 150, y: 510 },
+  attorneyCity: { x: 150, y: 485 },
+  
+  // Zakres pełnomocnictwa (Scope) section - typically around y=300-450 from bottom
+  scope1: { x: 50, y: 420 },
+  scope2: { x: 50, y: 400 },
+  scope3: { x: 50, y: 380 },
+  scope4: { x: 50, y: 360 },
+  scope5: { x: 50, y: 340 },
+  scope6: { x: 50, y: 320 },
+  
+  // Okres obowiązywania (Validity period) - typically around y=250-280 from bottom
+  startDate: { x: 150, y: 270 },
+  endDate: { x: 350, y: 270 },
+  
+  // Data i miejsce (Date and place) - typically around y=150-200 from bottom
+  issueDate: { x: 150, y: 180 },
+  issuePlace: { x: 350, y: 180 },
+  
+  // Podpisy (Signatures) - typically around y=80-120 from bottom
+  principalSignature: { x: 100, y: 100 },
+  attorneySignature: { x: 400, y: 100 },
+};
+
+export class UPL1PdfFiller {
+  private pdfTemplatePath: string;
+
+  constructor(pdfTemplatePath: string = '/pdf-templates/UPL-1/2023/UPL-1_2023.pdf') {
+    this.pdfTemplatePath = pdfTemplatePath;
+  }
+
+  /**
+   * Fill the UPL-1 form with provided data
+   * @param data Client and employee data to fill the form
+   * @returns PDF bytes as Uint8Array
+   */
+  async fillForm(data: UPL1Data): Promise<Uint8Array> {
+    // Load the template PDF from public folder
+    // In browser, fetch from the public URL
+    // Try multiple paths for better compatibility
+    let templateUrl = this.pdfTemplatePath;
+    
+    // Ensure the path is absolute (starts with /)
+    if (!templateUrl.startsWith('/')) {
+      templateUrl = '/' + templateUrl;
+    }
+    
+    let response = await fetch(templateUrl);
+    
+    // If primary path fails, try alternative locations (including legacy path for backward compatibility)
+    if (!response.ok) {
+      console.log('Primary PDF path failed, trying alternative locations...');
+      const alternativePaths = [
+        '/upl-1_06-08-2.pdf',  // Legacy path for backward compatibility
+        '/pdf-templates/UPL-1/2023/UPL-1_2023.pdf'
+      ];
+      
+      for (const altPath of alternativePaths) {
+        response = await fetch(altPath);
+        if (response.ok) {
+          console.log(`PDF loaded from alternative path: ${altPath}`);
+          break;
+        }
+      }
+    }
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load PDF template from ${templateUrl}: ${response.statusText}. Please ensure the official PDF file exists in the public folder at the correct path.`);
+    }
+    const pdfBytes = await response.arrayBuffer();
+
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+
+    // Embed a standard font that supports basic characters
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontSize = 10;
+    const textColor = rgb(0, 0, 0);
+
+    // Helper function to draw text with proper encoding
+    const drawText = (text: string, x: number, y: number, size: number = fontSize) => {
+      if (!text) return;
+      
+      // Convert Polish characters for better compatibility
+      const cleanText = this.sanitizeText(text);
+      
+      firstPage.drawText(cleanText, {
+        x,
+        y,
+        size,
+        font,
+        color: textColor,
+      });
+    };
+
+    // Fill principal (Mocodawca) data
+    const { client } = data;
+    
+    const clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim();
+    if (clientName) {
+      drawText(clientName, UPL1_FIELD_COORDINATES.principalName.x, UPL1_FIELD_COORDINATES.principalName.y);
+    }
+
+    if (client.companyName) {
+      drawText(client.companyName, UPL1_FIELD_COORDINATES.principalName.x, UPL1_FIELD_COORDINATES.principalName.y - 15);
+    }
+
+    if (client.nip) {
+      drawText(client.nip, UPL1_FIELD_COORDINATES.principalNIP.x, UPL1_FIELD_COORDINATES.principalNIP.y);
+    }
+
+    if (client.regon) {
+      drawText(client.regon, UPL1_FIELD_COORDINATES.principalREGON.x, UPL1_FIELD_COORDINATES.principalREGON.y);
+    }
+
+    if (client.address) {
+      const street = client.address.street || '';
+      if (street) {
+        drawText(street, UPL1_FIELD_COORDINATES.principalAddress.x, UPL1_FIELD_COORDINATES.principalAddress.y);
+      }
+      
+      const cityLine = `${client.address.zipCode || ''} ${client.address.city || ''}`.trim();
+      if (cityLine) {
+        drawText(cityLine, UPL1_FIELD_COORDINATES.principalCity.x, UPL1_FIELD_COORDINATES.principalCity.y);
+      }
+    }
+
+    // Fill attorney (Pełnomocnik) data
+    const { employee } = data;
+    
+    const employeeName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
+    if (employeeName) {
+      drawText(employeeName, UPL1_FIELD_COORDINATES.attorneyName.x, UPL1_FIELD_COORDINATES.attorneyName.y);
+    }
+
+    if (employee.pesel) {
+      drawText(employee.pesel, UPL1_FIELD_COORDINATES.attorneyPESEL.x, UPL1_FIELD_COORDINATES.attorneyPESEL.y);
+    }
+
+    // Fill scope of authorization
+    const defaultScope = [
+      '1. Reprezentowania mocodawcy przed organami skarbowymi',
+      '2. Składania deklaracji podatkowych i innych dokumentów',
+      '3. Odbierania korespondencji związanej ze sprawami podatkowymi',
+      '4. Dostępu do informacji podatkowych mocodawcy',
+      '5. Podpisywania dokumentów w imieniu mocodawcy',
+      '6. Składania wniosków i odwołań w sprawach podatkowych'
+    ];
+
+    const scopeItems = data.scope || defaultScope;
+    const scopeCoordinates = [
+      UPL1_FIELD_COORDINATES.scope1,
+      UPL1_FIELD_COORDINATES.scope2,
+      UPL1_FIELD_COORDINATES.scope3,
+      UPL1_FIELD_COORDINATES.scope4,
+      UPL1_FIELD_COORDINATES.scope5,
+      UPL1_FIELD_COORDINATES.scope6,
+    ];
+
+    scopeItems.slice(0, 6).forEach((scopeItem, index) => {
+      if (scopeCoordinates[index]) {
+        drawText(scopeItem, scopeCoordinates[index].x, scopeCoordinates[index].y, 9);
+      }
+    });
+
+    // Fill dates
+    const currentDate = data.startDate || new Date().toLocaleDateString('pl-PL');
+    drawText(currentDate, UPL1_FIELD_COORDINATES.issueDate.x, UPL1_FIELD_COORDINATES.issueDate.y);
+
+    if (data.startDate) {
+      drawText(data.startDate, UPL1_FIELD_COORDINATES.startDate.x, UPL1_FIELD_COORDINATES.startDate.y);
+    }
+
+    if (data.endDate) {
+      drawText(data.endDate, UPL1_FIELD_COORDINATES.endDate.x, UPL1_FIELD_COORDINATES.endDate.y);
+    }
+
+    // Save the filled PDF
+    const filledPdfBytes = await pdfDoc.save();
+    return filledPdfBytes;
+  }
+
+  /**
+   * Sanitize text to handle Polish characters
+   * Converts Polish characters to ASCII equivalents for PDF compatibility
+   */
+  private sanitizeText(text: string): string {
+    // Map Polish characters to ASCII equivalents
+    const polishCharMap: { [key: string]: string } = {
+      'ą': 'a', 'Ą': 'A',
+      'ć': 'c', 'Ć': 'C',
+      'ę': 'e', 'Ę': 'E',
+      'ł': 'l', 'Ł': 'L',
+      'ń': 'n', 'Ń': 'N',
+      'ó': 'o', 'Ó': 'O',
+      'ś': 's', 'Ś': 'S',
+      'ź': 'z', 'Ź': 'Z',
+      'ż': 'z', 'Ż': 'Z'
+    };
+    
+    let sanitized = text;
+    for (const [polish, ascii] of Object.entries(polishCharMap)) {
+      sanitized = sanitized.replace(new RegExp(polish, 'g'), ascii);
+    }
+    
+    // Remove control characters
+    return sanitized.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+  }
+
+  /**
+   * Generate a Blob from the filled PDF (for browser download)
+   */
+  async fillFormAsBlob(data: UPL1Data): Promise<Blob> {
+    const pdfBytes = await this.fillForm(data);
+    return new Blob([pdfBytes], { type: 'application/pdf' });
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "version": "2023",
+  "fields": {
+    "taxpayerName": { "pdfField": "nazwisko_imie", "page": 1, "x": 150, "y": 720 },
+    "taxpayerId": { "pdfField": "pesel", "page": 1, "x": 150, "y": 695 },
+    "taxpayerNIP": { "pdfField": "nip", "page": 1, "x": 150, "y": 670 },
+    "taxpayerAddress": { "pdfField": "adres", "page": 1, "x": 150, "y": 645 },
+    "taxOffice": { "pdfField": "urzad_skarbowy", "page": 1, "x": 150, "y": 595 },
+    "incomeSource": { "pdfField": "zrodlo_przychodu", "page": 1, "x": 150, "y": 550 },
+    "incomeAmount": { "pdfField": "kwota_przychodu", "page": 1, "x": 400, "y": 650 },
+    "taxAmount": { "pdfField": "podatek", "page": 1, "x": 400, "y": 600 }
+  },
+  "calculations": {}
+}

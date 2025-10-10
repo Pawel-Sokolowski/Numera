@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head><title>Icon Generator</title></head>
+<body>
+<canvas id="icon192" width="192" height="192"></canvas>
+<canvas id="icon512" width="512" height="512"></canvas>
+<script>
+function generateIcon(canvasId, size) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  
+  // Background
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, size, size);
+  
+  // Office building icon
+  ctx.fillStyle = '#3b82f6';
+  const margin = size * 0.2;
+  const width = size * 0.6;
+  const height = size * 0.6;
+  ctx.fillRect(margin, margin, width, height);
+  
+  // Windows
+  ctx.fillStyle = '#ffffff';
+  const windowSize = size * 0.1;
+  const gap = size * 0.05;
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      ctx.fillRect(
+        margin + gap + col * (windowSize + gap),
+        margin + gap + row * (windowSize + gap),
+        windowSize,
+        windowSize
+      );
+    }
+  }
+  
+  return canvas.toDataURL('image/png');
+}
+
+console.log('Icon 192:', generateIcon('icon192', 192));
+console.log('Icon 512:', generateIcon('icon512', 512));
+</script>
+</body>
+</html>

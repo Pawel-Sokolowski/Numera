@@ -1,0 +1,159 @@
+name: Build and Release Installers
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: npm run build
+
+    - name: Build Windows installer
+      if: matrix.os == 'windows-latest'
+      run: npm run dist-win
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Linux installer
+      if: matrix.os == 'ubuntu-latest'
+      run: npm run dist-linux
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build macOS installer
+      if: matrix.os == 'macos-latest'
+      run: npm run dist-mac
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload Windows artifacts
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-installer
+        path: |
+          dist-electron/*.exe
+
+    - name: Upload Linux artifacts
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-installer
+        path: |
+          dist-electron/*.AppImage
+
+    - name: Upload macOS artifacts
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-installer
+        path: |
+          dist-electron/*.dmg
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Download Windows artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: windows-installer
+        path: ./release-assets/
+
+    - name: Download Linux artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: linux-installer
+        path: ./release-assets/
+
+    - name: Download macOS artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: macos-installer
+        path: ./release-assets/
+
+    - name: List release assets
+      run: ls -la ./release-assets/
+
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.VERSION }}
+        name: Office Management System ${{ steps.version.outputs.VERSION }}
+        body: |
+          ## Office Management System Release ${{ steps.version.outputs.VERSION }}
+          
+          ### 📥 Downloads
+          
+          **Windows:**
+          - `Office Management System Setup 1.0.0.exe` - Full installer with setup wizard
+          - `Office Management System-1.0.0-portable.exe` - Portable version (no installation required)
+          
+          **Linux:**
+          - `Office Management System-1.0.0.AppImage` - Portable Linux application
+          
+          **macOS:**
+          - `Office Management System-1.0.0.dmg` - macOS disk image installer
+          
+          ### 🚀 Features
+          
+          - Complete office management system with React frontend
+          - Electron desktop application with embedded Express.js server
+          - PostgreSQL database support (optional - works with mock data)
+          - Invoice management, client tracking, time tracking
+          - Team communication and calendar features
+          
+          ### 💻 System Requirements
+          
+          - **Windows:** Windows 10 or later (64-bit)
+          - **Linux:** Modern Linux distribution (64-bit)
+          - **macOS:** macOS 10.14 or later
+          
+          ### 📖 Installation Guide
+          
+          See [INSTALLER_GUIDE.md](https://github.com/Pawel-Sokolowski/ManagmentApp/blob/main/INSTALLER_GUIDE.md) for detailed installation instructions.
+        draft: false
+        prerelease: false
+        files: |
+          ./release-assets/*
+        token: ${{ secrets.GITHUB_TOKEN }}
