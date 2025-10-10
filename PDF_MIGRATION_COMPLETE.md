@@ -59,7 +59,7 @@ When this PR is merged to the `main` branch:
    - GitHub Pages uploads `build/` directory
    - All 39 PDFs become available at:
      ```
-     https://pawel-sokolowski.github.io/ManagmentApp/pdf-templates/{FORM}/{YEAR}/{FORM}_{YEAR}.pdf
+     https://pawel-sokolowski.github.io/Numera/pdf-templates/{FORM}/{YEAR}/{FORM}_{YEAR}.pdf
      ```
 
 ### How Files Are Accessed
@@ -78,12 +78,12 @@ const pdfBytes = await service.fillForm('PIT-R', '2023', formData);
 
 The `vite.config.ts` is already configured:
 ```typescript
-base: process.env.VITE_BASE_PATH || '/ManagmentApp/',
+base: process.env.VITE_BASE_PATH || '/Numera/',
 ```
 
 This ensures:
 - Local dev: Uses `/`
-- GitHub Pages: Uses `/ManagmentApp/`
+- GitHub Pages: Uses `/Numera/`
 - Files in `public/` are copied to `build/` automatically
 
 ## Verification
@@ -105,13 +105,13 @@ Once deployed, you can verify PDFs are accessible:
 
 ```bash
 # Check if PDFs are available
-curl -I https://pawel-sokolowski.github.io/ManagmentApp/pdf-templates/PIT-R/2023/PIT-R_2023.pdf
+curl -I https://pawel-sokolowski.github.io/Numera/pdf-templates/PIT-R/2023/PIT-R_2023.pdf
 
 # Should return: HTTP 200 OK
 ```
 
 Or open in browser:
-- https://pawel-sokolowski.github.io/ManagmentApp/
+- https://pawel-sokolowski.github.io/Numera/
 - Navigate to forms section
 - Select a form type and year
 - PDF should load successfully
