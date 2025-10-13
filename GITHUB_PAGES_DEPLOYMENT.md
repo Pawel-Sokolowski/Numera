@@ -6,7 +6,7 @@ This document describes the GitHub Pages deployment setup for the Office Managem
 
 The application is automatically deployed to GitHub Pages when changes are pushed to the `main` branch.
 
-**Live URL**: https://pawel-sokolowski.github.io/ManagmentApp/
+**Live URL**: https://pawel-sokolowski.github.io/Numera/
 
 ## How It Works
 
@@ -21,7 +21,7 @@ The application is automatically deployed to GitHub Pages when changes are pushe
 
 The deployment uses the following configuration:
 
-- **Base Path**: `/ManagmentApp/` (default for GitHub Pages subdirectory)
+- **Base Path**: `/Numera/` (default for GitHub Pages subdirectory)
 - **Build Command**: `npm run build`
 - **Output Directory**: `./build`
 - **Node Version**: 18
@@ -31,7 +31,7 @@ The deployment uses the following configuration:
 
 1. **Dynamic Path Resolution**
    - Service worker automatically detects base path
-   - Works in both local development (`/`) and GitHub Pages (`/ManagmentApp/`)
+   - Works in both local development (`/`) and GitHub Pages (`/Numera/`)
 
 2. **Progressive Web App (PWA)**
    - Installable on desktop and mobile
@@ -61,7 +61,7 @@ To build for deployment on other platforms (not GitHub Pages):
 VITE_BASE_PATH=/ npm run build
 ```
 
-This will build with base path `/` instead of `/ManagmentApp/`.
+This will build with base path `/` instead of `/Numera/`.
 
 ## Manual Deployment
 
@@ -105,7 +105,7 @@ Check the [Actions tab](../../actions) for build logs if deployment fails.
 ### Environment Detection
 
 The application uses `VITE_BASE_PATH` environment variable to determine the base path:
-- **Default (no variable)** → uses `/ManagmentApp/` (GitHub Pages)
+- **Default (no variable)** → uses `/Numera/` (GitHub Pages)
 - **VITE_BASE_PATH=/** → uses `/` (local/other hosting)
 
 ## Updating the Deployment

@@ -151,7 +151,7 @@ jobs:
           
           ### 📖 Installation Guide
           
-          See [INSTALLER_GUIDE.md](https://github.com/Pawel-Sokolowski/ManagmentApp/blob/main/INSTALLER_GUIDE.md) for detailed installation instructions.
+          See [INSTALLER_GUIDE.md](https://github.com/Pawel-Sokolowski/Numera/blob/main/INSTALLER_GUIDE.md) for detailed installation instructions.
         draft: false
         prerelease: false
         files: |

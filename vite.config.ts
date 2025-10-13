@@ -5,9 +5,9 @@
 
   export default defineConfig({
     plugins: [react()],
-    // Use /ManagmentApp/ for GitHub Pages deployment
+    // Use /Numera/ for GitHub Pages deployment
     // Set VITE_BASE_PATH=/ for local server deployment
-    base: process.env.VITE_BASE_PATH || '/ManagmentApp/',
+    base: process.env.VITE_BASE_PATH || '/Numera/',
     define: {
       // Add build timestamp for cache busting
       __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString())

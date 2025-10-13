@@ -10,8 +10,8 @@ A comprehensive office management system built as a **Progressive Web Applicatio
 
 ```bash
 # Clone repository
-git clone https://github.com/Pawel-Sokolowski/ManagmentApp.git
-cd ManagmentApp
+git clone https://github.com/Pawel-Sokolowski/Numera.git
+cd Numera
 
 # Install dependencies
 npm install
@@ -116,7 +116,7 @@ This application is a **Progressive Web Application** that can be:
 ### Project Structure
 
 ```
-ManagmentApp/
+Numera/
 ├── public/              # Static assets and PWA files
 │   ├── manifest.webmanifest  # PWA manifest
 │   ├── sw.js            # Service worker
@@ -174,7 +174,7 @@ PDF generation is fully functional in the web version and works reliably in all 
 
 ## 🌐 Live Demo
 
-**[Try it now on GitHub Pages](https://pawel-sokolowski.github.io/ManagmentApp/)**
+**[Try it now on GitHub Pages](https://pawel-sokolowski.github.io/Numera/)**
 
 Experience the application directly in your browser - no installation required!
 
