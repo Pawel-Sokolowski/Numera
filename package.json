@@ -83,6 +83,7 @@
             "server:prod": "NODE_ENV=production node server/index.js",
             "setup-db": "node scripts/setup-database.js",
             "start": "npm run build && npm run server:prod",
-            "test:pdf-filling": "ts-node scripts/testPdfFormFillingOptions.ts"
+            "test:pdf-filling": "npx ts-node scripts/testPdfFormFillingOptions.ts",
+            "test:universal-pdf-filling": "npx ts-node scripts/testUniversalPdfFormFilling.ts"
       }
 }
