@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { FillableFormPreview } from "./FillableFormPreview";
 
 interface AuthorizationFormDialogProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export function AuthorizationFormDialog({
   const [formType, setFormType] = useState<FormType>('UPL-1');
   const [selectedCategory, setSelectedCategory] = useState<FormCategory>('pelnomocnictwa');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showFormPreview, setShowFormPreview] = useState(false);
 
   // Get forms by category
   const categorizedForms = useMemo(() => {
@@ -52,7 +54,7 @@ export function AuthorizationFormDialog({
     }
   };
 
-  const handleGenerate = async () => {
+  const handleOpenFormPreview = () => {
     if (!selectedClientId || !selectedEmployeeId) {
       toast.error("Wybierz klienta i pracownika");
       return;
@@ -66,33 +68,64 @@ export function AuthorizationFormDialog({
       return;
     }
 
-    setIsGenerating(true);
+    // Open the fillable form preview
+    setShowFormPreview(true);
+  };
 
-    try {
-      const generator = new AuthorizationFormGenerator();
-      await generator.downloadForm({
-        client,
-        employee,
-        formType
-      });
+  const handleGenerateFromPreview = async (updatedFields: Record<string, string>) => {
+    const client = clients.find(c => c.id === selectedClientId);
+    const employee = employees.find(e => e.id === selectedEmployeeId);
 
-      toast.success(`Dokument ${formType} został wygenerowany i pobrany`);
-      
-      // Reset form after successful generation
-      setTimeout(() => {
-        setSelectedClientId(preSelectedClientId || '');
-        setSelectedEmployeeId('');
-        setFormType('UPL-1');
-        setSelectedCategory('pelnomocnictwa');
-        onClose();
-      }, 500);
-    } catch (error) {
-      console.error('Error generating form:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Nieznany błąd';
-      toast.error(`Błąd podczas generowania dokumentu: ${errorMessage}`);
-    } finally {
-      setIsGenerating(false);
+    if (!client || !employee) {
+      throw new Error("Nie znaleziono wybranego klienta lub pracownika");
     }
+
+    // Create updated client and employee objects with form data
+    const updatedClient: Client = {
+      ...client,
+      firstName: updatedFields.clientFirstName || client.firstName,
+      lastName: updatedFields.clientLastName || client.lastName,
+      nip: updatedFields.clientNIP || client.nip,
+      pesel: updatedFields.clientPESEL || client.pesel,
+      address: updatedFields.clientAddress || client.address,
+      city: updatedFields.clientCity || client.city,
+      postalCode: updatedFields.clientPostalCode || client.postalCode,
+      companyName: updatedFields.companyName || client.companyName,
+      regon: updatedFields.regon || client.regon,
+      taxOffice: updatedFields.taxOffice || client.taxOffice,
+    };
+
+    const updatedEmployee: User = {
+      ...employee,
+      firstName: updatedFields.employeeFirstName || employee.firstName,
+      lastName: updatedFields.employeeLastName || employee.lastName,
+      pesel: updatedFields.employeePESEL || employee.pesel,
+    };
+
+    const generator = new AuthorizationFormGenerator();
+    await generator.downloadForm({
+      client: updatedClient,
+      employee: updatedEmployee,
+      formType,
+      additionalData: {
+        scope: updatedFields.scope,
+        startDate: updatedFields.startDate,
+        endDate: updatedFields.endDate,
+        taxOffice: updatedFields.taxOffice,
+        period: updatedFields.period,
+        year: updatedFields.taxYear,
+      }
+    });
+
+    // Reset form after successful generation
+    setTimeout(() => {
+      setSelectedClientId(preSelectedClientId || '');
+      setSelectedEmployeeId('');
+      setFormType('UPL-1');
+      setSelectedCategory('pelnomocnictwa');
+      setShowFormPreview(false);
+      onClose();
+    }, 500);
   };
 
   return (
@@ -229,12 +262,24 @@ export function AuthorizationFormDialog({
           <Button variant="outline" onClick={onClose} disabled={isGenerating}>
             Anuluj
           </Button>
-          <Button onClick={handleGenerate} disabled={isGenerating}>
-            <Download className="mr-2 h-4 w-4" />
-            {isGenerating ? 'Generowanie...' : 'Generuj i pobierz'}
+          <Button onClick={handleOpenFormPreview} disabled={isGenerating}>
+            <FileText className="mr-2 h-4 w-4" />
+            Otwórz formularz
           </Button>
         </div>
       </DialogContent>
+
+      {/* Fillable Form Preview Dialog */}
+      {showFormPreview && selectedClientId && selectedEmployeeId && (
+        <FillableFormPreview
+          isOpen={showFormPreview}
+          onClose={() => setShowFormPreview(false)}
+          client={clients.find(c => c.id === selectedClientId)!}
+          employee={employees.find(e => e.id === selectedEmployeeId)!}
+          formType={formType}
+          onGenerate={handleGenerateFromPreview}
+        />
+      )}
     </Dialog>
   );
 }
