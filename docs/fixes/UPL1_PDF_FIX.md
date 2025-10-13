@@ -14,6 +14,8 @@ The PDF file at `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` existed but was
 
 This caused `pdf-lib` to fail when trying to load and fill the template.
 
+**Note:** This issue has occurred multiple times. The PDF file gets corrupted during development or deployment, requiring regeneration.
+
 ## Solution
 Regenerated the UPL-1 PDF template using the existing script `scripts/generateUPL1Template.ts`.
 
@@ -33,7 +35,7 @@ Regenerated the UPL-1 PDF template using the existing script `scripts/generateUP
 - `upl-1_06-08-2.pdf` - Regenerated (329KB → 1.7KB)
 - `public/pdf-templates/UPL-1/2023/README.md` - Added regeneration instructions
 
-All four copies are now identical (MD5: `4c547677cc6bb1893e2449198ab65e71`).
+All four copies are now identical (MD5: `eead6133bd87723ffa8b2919783922e2`).
 
 ## Verification
 - ✅ PDF loads correctly with `pdf-lib`
