@@ -6,19 +6,42 @@ const path = require('path');
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Security middleware
+const { 
+  authLimiter, 
+  generalLimiter, 
+  strictLimiter, 
+  securityHeaders, 
+  sanitizeInput, 
+  secureErrorHandler 
+} = require('./middleware/security');
+
+// Validation utilities
+const { sqlSafe } = require('./utils/validation');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Database connection
+// Validate required environment variables
+const requiredEnvVars = ['JWT_SECRET', 'DB_PASSWORD'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar] || process.env[envVar] === 'demo-secret-key' || process.env[envVar] === 'password');
+
+if (missingEnvVars.length > 0 && process.env.NODE_ENV === 'production') {
+  console.error('❌ Missing or insecure environment variables:', missingEnvVars);
+  process.exit(1);
+}
+
+// Database connection with secure defaults
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'office_management',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'password',
+  password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'password'),
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 // Test database connection
@@ -30,12 +53,32 @@ pool.on('error', (err) => {
   console.error('❌ PostgreSQL connection error:', err);
 });
 
-// Middleware
-app.use(helmet());
-app.use(cors());
-app.use(morgan('combined'));
+// Security middleware
+app.use(securityHeaders);
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.FRONTEND_URL || 'http://localhost:3000'] 
+    : true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Logging
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+// Body parsing with limits
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Input sanitization
+app.use(sanitizeInput);
+
+// Rate limiting
+app.use('/api/auth', authLimiter);
+app.use('/api', generalLimiter);
 
 // API Routes
 // app.use('/api/auth', require('./routes/auth'));
@@ -66,25 +109,30 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Secure database query endpoint for browser version
-app.post('/api/db-query', async (req, res) => {
+app.post('/api/db-query', strictLimiter, async (req, res) => {
   try {
     const { table } = req.body;
     const allowedTables = ['users', 'projects', 'tasks', 'clients']; // Whitelist allowed table names
-    if (!table || !allowedTables.includes(table)) {
+    
+    // Validate table name against whitelist
+    if (!table || !sqlSafe.validateTableName(table, allowedTables)) {
       return res.status(400).json({ success: false, error: 'Invalid table name' });
     }
-    // Never interpolate table names directly into query - use identifier escaping for prod
-    const result = await pool.query(`SELECT * FROM ${table} LIMIT 100`);
+    
+    // Use parameterized query with proper identifier escaping
+    const escapedTable = sqlSafe.escapeIdentifier(table);
+    const result = await pool.query(`SELECT * FROM ${escapedTable} LIMIT 100`);
+    
     res.json({ 
       success: true, 
       data: result.rows,
       rowCount: result.rowCount 
     });
   } catch (error) {
-    console.error('Database query error:', error);
+    console.error('Database query error:', error.message);
     res.status(500).json({ 
       success: false, 
-      error: error.message 
+      error: 'Database query failed' 
     });
   }
 });
@@ -173,10 +221,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
-});
+app.use(secureErrorHandler);
 
 // Start server
 app.listen(PORT, () => {

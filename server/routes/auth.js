@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
+const { validateInput, sanitizeInput, validateRequest } = require('../utils/validation');
 
 // Use the same pool configuration as main server
 const pool = new Pool({
@@ -13,14 +14,31 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'password',
 });
 
+// Login validation schema
+const loginSchema = {
+  email: {
+    required: true,
+    validator: validateInput.email,
+    maxLength: 255
+  },
+  password: {
+    required: true,
+    validator: validateInput.password,
+    maxLength: 128
+  }
+};
+
 // Login endpoint
-router.post('/login', async (req, res) => {
+router.post('/login', validateRequest(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Sanitize inputs
+    const sanitizedEmail = sanitizeInput.normalizeString(email.toLowerCase());
+
     // Find user by email
     const userQuery = 'SELECT * FROM users WHERE email = $1 AND is_active = true';
-    const userResult = await pool.query(userQuery, [email]);
+    const userResult = await pool.query(userQuery, [sanitizedEmail]);
 
     if (userResult.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -36,10 +54,16 @@ router.post('/login', async (req, res) => {
       }
     }
 
-    // Generate JWT token
+    // Generate JWT token with secure secret
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret || jwtSecret === 'demo-secret-key') {
+      console.error('❌ JWT_SECRET not properly configured');
+      return res.status(500).json({ error: 'Authentication configuration error' });
+    }
+
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'demo-secret-key',
+      jwtSecret,
       { expiresIn: '24h' }
     );
 
@@ -61,7 +85,7 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Login error:', error.message);
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -122,11 +146,21 @@ const verifyToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'demo-secret-key');
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret || jwtSecret === 'demo-secret-key') {
+      return res.status(500).json({ error: 'Authentication configuration error' });
+    }
+
+    const decoded = jwt.verify(token, jwtSecret);
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(400).json({ error: 'Invalid token' });
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired' });
+    } else if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    res.status(401).json({ error: 'Token verification failed' });
   }
 };
 
