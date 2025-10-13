@@ -225,7 +225,7 @@ If using pdf-lib and characters don't display:
 
 If you see "Failed to load PDF template":
 1. Check if template exists in `/public/pdf-templates/`
-2. Regenerate template: `npx tsx scripts/generateUPL1Template.ts`
+2. Copy official template from PDFFile: `cp PDFFile/upl-1_06-08-2.pdf public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf`
 3. System will automatically fallback to pdfmake
 
 ### Large Bundle Size
