@@ -30,9 +30,18 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // Determine the correct service worker path based on the base tag or current path
-          const base = document.querySelector('base')?.getAttribute('href') || '/';
-          const swPath = base + (base.endsWith('/') ? '' : '/') + 'sw.js';
+          // Determine the correct base path from Vite's injected script tag
+          const scriptTag = document.querySelector('script[type="module"][src*="/assets/"]');
+          let basePath = '/';
+          if (scriptTag) {
+            const src = scriptTag.getAttribute('src');
+            const assetsIndex = src.indexOf('/assets/');
+            if (assetsIndex > 0) {
+              basePath = src.substring(0, assetsIndex + 1);
+            }
+          }
+          
+          const swPath = basePath + 'sw.js';
           
           navigator.serviceWorker.register(swPath)
             .then(registration => {
