@@ -89,21 +89,27 @@ export function FillableFormPreview({
       {
         id: 'clientAddress',
         label: 'Adres klienta',
-        value: clientData.address || '',
+        value: typeof clientData.address === 'object' && clientData.address?.street 
+          ? clientData.address.street 
+          : (typeof clientData.address === 'string' ? clientData.address : ''),
         type: 'text',
         placeholder: 'Ulica i numer'
       },
       {
         id: 'clientCity',
         label: 'Miasto',
-        value: clientData.city || '',
+        value: typeof clientData.address === 'object' && clientData.address?.city
+          ? clientData.address.city
+          : (clientData.city || ''),
         type: 'text',
         placeholder: 'Miasto'
       },
       {
         id: 'clientPostalCode',
         label: 'Kod pocztowy',
-        value: clientData.postalCode || '',
+        value: typeof clientData.address === 'object' && clientData.address?.zipCode
+          ? clientData.address.zipCode
+          : (clientData.postalCode || ''),
         type: 'text',
         placeholder: 'np. 00-000'
       },
