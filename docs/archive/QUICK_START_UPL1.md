@@ -1,5 +1,7 @@
 # UPL-1 Quick Start Guide
 
+> **⚠️ ARCHIVED DOCUMENT**: This document may reference outdated approaches. Official government PDF forms are stored in the `PDFFile/` folder and should be used as-is, not generated.
+
 ## Overview
 
 Automated UPL-1 (Pełnomocnictwo do Urzędu Skarbowego) form generation is now available using the official PDF template.

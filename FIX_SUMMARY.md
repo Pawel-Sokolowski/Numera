@@ -93,5 +93,5 @@ All public locations should be copies of `PDFFile/upl-1_06-08-2.pdf`.
 ## References
 - Previous fix documentation: `docs/fixes/UPL1_PDF_FIX.md`
 - Template documentation: `public/pdf-templates/UPL-1/2023/README.md`
-- Generation script: `scripts/generateUPL1Template.ts`
+- Official source files: `PDFFile/` folder (contains government official forms)
 - UPL1 PDF Filler: `src/utils/upl1PdfFiller.ts`

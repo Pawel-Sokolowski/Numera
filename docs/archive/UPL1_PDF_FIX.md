@@ -1,5 +1,7 @@
 # UPL-1 PDF Fix - "Failed to load PDF pełnomocnictwo"
 
+> **⚠️ ARCHIVED DOCUMENT**: This document describes an outdated approach using generated PDFs. The current approach uses official government forms from the `PDFFile/` folder. See `docs/fixes/UPL1_PDF_FIX.md` for current documentation.
+
 ## Issue
 The UPL-1 (Pełnomocnictwo do Urzędu Skarbowego) PDF files were corrupted, causing the error "failed to load pdf pełnomocnictwo" when attempting to generate authorization forms.
 

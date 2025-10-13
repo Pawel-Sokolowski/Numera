@@ -1,5 +1,7 @@
 # Solution Summary: UPL-1 PDF Loading Fix
 
+> **⚠️ ARCHIVED DOCUMENT**: This document describes an outdated approach using generated PDFs. The current approach uses official government forms from the `PDFFile/` folder. The generation script referenced here has been removed.
+
 ## Problem Statement
 **Issue**: "failed to load pdf pełnomocnictwo"
 
