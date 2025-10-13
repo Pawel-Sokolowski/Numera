@@ -49,3 +49,4 @@ installer-resources/
 tmp/
 temp/test-output-*.pdf
 test-output*.pdf
+test-logs-*.txt
