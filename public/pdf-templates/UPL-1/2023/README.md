@@ -1,24 +1,22 @@
 # UPL-1 2023 Template
 
-✅ **This template is available** - generated from scripts/generateUPL1Template.ts
+✅ **This template is available** - copied from PDFFile/upl-1_06-08-2.pdf
 
 ## Source
-- Generated file: `scripts/generateUPL1Template.ts`
-- Also available in: `public/upl-1_06-08-2.pdf` and `PDFFile/upl-1_06-08-2.pdf`
+- Original file: `PDFFile/upl-1_06-08-2.pdf` (official working template)
+- Also available in: `public/upl-1_06-08-2.pdf` and root `upl-1_06-08-2.pdf`
 - Form: Power of Attorney to Tax Office (Pełnomocnictwo do Urzędu Skarbowego)
 
-## Regenerating the Template
-If the PDF file becomes corrupted or needs to be regenerated, run:
+## Restoring the Template
+If the PDF file becomes corrupted, copy from the PDFFile folder:
 
 ```bash
-npx tsx scripts/generateUPL1Template.ts
+cp PDFFile/upl-1_06-08-2.pdf public/upl-1_06-08-2.pdf
+cp PDFFile/upl-1_06-08-2.pdf public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf
+cp PDFFile/upl-1_06-08-2.pdf upl-1_06-08-2.pdf
 ```
 
-This will regenerate all copies of the UPL-1 template:
-- `PDFFile/upl-1_06-08-2.pdf`
-- `public/upl-1_06-08-2.pdf`
-- `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf`
-- `upl-1_06-08-2.pdf` (root)
+The PDFFile folder contains the authoritative source files.
 
 ## Usage
 This form is ready to use with the TaxFormService.

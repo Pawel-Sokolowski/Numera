@@ -16,25 +16,25 @@ The PDF file at `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` was **corrupted
 - Status: Invalid/corrupted PDF structure that `pdf-lib` could not load
 
 ## Solution
-Regenerated all UPL-1 PDF templates using the existing generation script `scripts/generateUPL1Template.ts`.
+Copied the working UPL-1 PDF template from `PDFFile/upl-1_06-08-2.pdf` to all required locations.
 
 ### Steps Taken
-1. Installed project dependencies: `npm install`
-2. Installed `tsx` for TypeScript execution: `npm install --save-dev tsx`
-3. Ran the generation script: `npx tsx scripts/generateUPL1Template.ts`
-4. Verified the regenerated PDFs are valid
+1. Identified that `PDFFile/upl-1_06-08-2.pdf` contained a valid working template (1.7KB, 1 page)
+2. The public folder locations had corrupted 322KB files with 0 pages
+3. Copied the working template from PDFFile to all locations
+4. Verified the copied PDFs are valid
 
 ### Results
-All four PDF copies were regenerated:
-- `PDFFile/upl-1_06-08-2.pdf` - 322KB → 1.7KB
-- `public/upl-1_06-08-2.pdf` - 322KB → 1.7KB
-- `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` - 322KB → 1.7KB
-- `upl-1_06-08-2.pdf` (root) - 322KB → 1.7KB
+All corrupted PDF copies were replaced with the working template from PDFFile:
+- `public/upl-1_06-08-2.pdf` - 322KB corrupted → 1.7KB valid (copied from PDFFile)
+- `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` - 322KB corrupted → 1.7KB valid (copied from PDFFile)
+- `upl-1_06-08-2.pdf` (root) - unchanged (already valid)
+- `PDFFile/upl-1_06-08-2.pdf` - unchanged (source file, already valid)
 
 All copies are now:
 - **Valid PDF 1.7 documents**
-- **1,709 bytes (1.7KB) each**
-- **Identical** (MD5: `eead6133bd87723ffa8b2919783922e2`)
+- **1,708 bytes (1.7KB) each**
+- **Identical to the PDFFile source** (MD5: `4c547677cc6bb1893e2449198ab65e71`)
 - **Contain 1 page** with proper UPL-1 form structure
 
 ## Verification
@@ -46,35 +46,27 @@ All copies are now:
 ✅ Build output includes valid PDF templates  
 
 ## Prevention
-This issue has occurred multiple times. If it happens again:
+This issue has occurred multiple times. If it happens again, copy the working template from PDFFile:
 
 ```bash
 # Navigate to project directory
 cd /home/runner/work/Numera/Numera
 
-# Install dependencies if not already installed
-npm install
+# Copy the working template from PDFFile to all locations
+cp PDFFile/upl-1_06-08-2.pdf public/upl-1_06-08-2.pdf
+cp PDFFile/upl-1_06-08-2.pdf public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf
+cp PDFFile/upl-1_06-08-2.pdf upl-1_06-08-2.pdf
 
-# Regenerate the template
-npx tsx scripts/generateUPL1Template.ts
-
-# Verify the fix
-npx tsx scripts/testUPL1Filler.ts
+# Verify the files
+file public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf
 ```
 
 ## Technical Details
 
-### The Generation Script (`scripts/generateUPL1Template.ts`)
-- Uses `pdf-lib` to create a new PDF document
-- Creates a blank A4 page (595 x 842 points)
-- Embeds standard fonts (Helvetica, HelveticaBold)
-- Draws UPL-1 form structure with labeled fields:
-  - MOCODAWCA (Principal) section
-  - PELNOMOCNIK (Attorney) section
-  - ZAKRES PELNOMOCNICTWA (Scope) section
-  - OKRES OBOWIAZYWANIA (Validity period)
-  - Signature fields
-- Saves to all four locations for compatibility
+### The Source File
+- **Location**: `PDFFile/upl-1_06-08-2.pdf`
+- **Purpose**: Official working UPL-1 template that serves as the authoritative source
+- **Should not be modified**: Treat this as read-only; copy from it, don't regenerate it
 
 ### The UPL1PdfFiller Class (`src/utils/upl1PdfFiller.ts`)
 - Loads the template from the public folder using `fetch()`
@@ -88,14 +80,15 @@ The filler tries these paths in order:
 1. Primary: `/pdf-templates/UPL-1/2023/UPL-1_2023.pdf`
 2. Legacy: `/upl-1_06-08-2.pdf`
 
+All public locations should be copies of `PDFFile/upl-1_06-08-2.pdf`.
+
 ## Files Changed
-- `package.json` - Added `tsx` as dev dependency
-- `package-lock.json` - Updated with `tsx` installation
-- `PDFFile/upl-1_06-08-2.pdf` - Regenerated template
-- `public/upl-1_06-08-2.pdf` - Regenerated template
-- `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` - Regenerated template
-- `upl-1_06-08-2.pdf` - Regenerated template
-- `docs/fixes/UPL1_PDF_FIX.md` - Updated MD5 hash and added recurrence note
+- `public/upl-1_06-08-2.pdf` - Copied from PDFFile (replaced corrupted 322KB with working 1.7KB)
+- `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` - Copied from PDFFile (replaced corrupted 322KB with working 1.7KB)
+- `upl-1_06-08-2.pdf` - No change (already valid)
+- `PDFFile/upl-1_06-08-2.pdf` - No change (source file, already valid)
+- `docs/fixes/UPL1_PDF_FIX.md` - Updated to reflect copy approach instead of regeneration
+- `public/pdf-templates/UPL-1/2023/README.md` - Updated to reference PDFFile as source
 
 ## References
 - Previous fix documentation: `docs/fixes/UPL1_PDF_FIX.md`
