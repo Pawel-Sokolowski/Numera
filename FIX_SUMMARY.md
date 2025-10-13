@@ -16,20 +16,22 @@ The PDF file at `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` was **corrupted
 - Status: Invalid/corrupted PDF structure that `pdf-lib` could not load
 
 ## Solution
-Copied the working UPL-1 PDF template from `PDFFile/upl-1_06-08-2.pdf` to all required locations.
+**UPDATE (October 2025)**: The situation was reversed - public folder had the working files!
+
+Copied the working UPL-1 PDF template from `public/upl-1_06-08-2.pdf` to corrupted locations.
 
 ### Steps Taken
-1. Identified that `PDFFile/upl-1_06-08-2.pdf` contained a valid working template (1.7KB, 1 page)
-2. The public folder locations had corrupted 322KB files with 0 pages
-3. Copied the working template from PDFFile to all locations
-4. Verified the copied PDFs are valid
+1. Discovered that `public/upl-1_06-08-2.pdf` contained the valid working template (1.7KB, 1 page, PDF 1.7)
+2. The PDFFile location had a corrupted 322KB file with 0 pages
+3. Copied the working template FROM public TO PDFFile and root
+4. Verified all copied PDFs are valid and identical
 
 ### Results
-All corrupted PDF copies were replaced with the working template from PDFFile:
-- `public/upl-1_06-08-2.pdf` - 322KB corrupted → 1.7KB valid (copied from PDFFile)
-- `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` - 322KB corrupted → 1.7KB valid (copied from PDFFile)
-- `upl-1_06-08-2.pdf` (root) - unchanged (already valid)
-- `PDFFile/upl-1_06-08-2.pdf` - unchanged (source file, already valid)
+All corrupted PDF copies were replaced with the working template from public:
+- `PDFFile/upl-1_06-08-2.pdf` - 322KB corrupted → 1.7KB valid (copied from public)
+- `upl-1_06-08-2.pdf` (root) - created 1.7KB valid (copied from public)
+- `public/upl-1_06-08-2.pdf` - unchanged (source file, already valid 1.7KB)
+- `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` - unchanged (already valid 1.7KB)
 
 All copies are now:
 - **Valid PDF 1.7 documents**
@@ -46,27 +48,39 @@ All copies are now:
 ✅ Build output includes valid PDF templates  
 
 ## Prevention
-This issue has occurred multiple times. If it happens again, copy the working template from PDFFile:
+This issue has occurred multiple times. The working template is in the public folder.
+
+**UPDATE (October 2025)**: PDFFile was found to have corrupted files. The public folder contains the working versions. If corruption occurs again:
 
 ```bash
 # Navigate to project directory
 cd /home/runner/work/Numera/Numera
 
-# Copy the working template from PDFFile to all locations
-cp PDFFile/upl-1_06-08-2.pdf public/upl-1_06-08-2.pdf
-cp PDFFile/upl-1_06-08-2.pdf public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf
-cp PDFFile/upl-1_06-08-2.pdf upl-1_06-08-2.pdf
+# The WORKING template is in public folder (1.7KB, valid PDF 1.7)
+# Copy FROM public TO other locations if they become corrupted
 
-# Verify the files
-file public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf
+# To fix PDFFile:
+cp public/upl-1_06-08-2.pdf PDFFile/upl-1_06-08-2.pdf
+
+# To fix root:
+cp public/upl-1_06-08-2.pdf upl-1_06-08-2.pdf
+
+# To fix public/pdf-templates:
+cp public/upl-1_06-08-2.pdf public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf
+
+# Verify the files (should all be 1.7KB, PDF 1.7, MD5: 4c547677cc6bb1893e2449198ab65e71)
+file public/upl-1_06-08-2.pdf
+md5sum public/upl-1_06-08-2.pdf PDFFile/upl-1_06-08-2.pdf
 ```
 
 ## Technical Details
 
 ### The Source File
-- **Location**: `PDFFile/upl-1_06-08-2.pdf`
+- **Location**: `public/upl-1_06-08-2.pdf` (CORRECT SOURCE)
 - **Purpose**: Official working UPL-1 template that serves as the authoritative source
-- **Should not be modified**: Treat this as read-only; copy from it, don't regenerate it
+- **Size**: 1.7KB, PDF 1.7, MD5: `4c547677cc6bb1893e2449198ab65e71`
+- **Should not be modified**: Treat this as read-only; copy from it to other locations
+- **Note**: PDFFile was found to contain corrupted versions (322KB, 0 pages) and has been fixed by copying from public
 
 ### The UPL1PdfFiller Class (`src/utils/upl1PdfFiller.ts`)
 - Loads the template from the public folder using `fetch()`
@@ -83,12 +97,11 @@ The filler tries these paths in order:
 All public locations should be copies of `PDFFile/upl-1_06-08-2.pdf`.
 
 ## Files Changed
-- `public/upl-1_06-08-2.pdf` - Copied from PDFFile (replaced corrupted 322KB with working 1.7KB)
-- `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` - Copied from PDFFile (replaced corrupted 322KB with working 1.7KB)
-- `upl-1_06-08-2.pdf` - No change (already valid)
-- `PDFFile/upl-1_06-08-2.pdf` - No change (source file, already valid)
-- `docs/fixes/UPL1_PDF_FIX.md` - Updated to reflect copy approach instead of regeneration
-- `public/pdf-templates/UPL-1/2023/README.md` - Updated to reference PDFFile as source
+- `PDFFile/upl-1_06-08-2.pdf` - Fixed: Copied from public (replaced corrupted 322KB with working 1.7KB)
+- `upl-1_06-08-2.pdf` - Created: Copied from public (new 1.7KB valid file)
+- `public/upl-1_06-08-2.pdf` - No change (source file, already valid 1.7KB)
+- `public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf` - No change (already valid 1.7KB)
+- `FIX_SUMMARY.md` - Updated to reflect correct source (public, not PDFFile)
 
 ## References
 - Previous fix documentation: `docs/fixes/UPL1_PDF_FIX.md`

@@ -45,14 +45,17 @@ All four copies are now identical to the original working file from PDFFile (MD5
 - ✅ Documentation updated with regeneration instructions
 
 ## Prevention
-If this issue occurs again in the future, copy the working template from PDFFile:
+**UPDATE (October 2025)**: The source file is actually in the public folder, not PDFFile!
+
+If this issue occurs again in the future, copy the working template FROM public:
 ```bash
-cp PDFFile/upl-1_06-08-2.pdf public/upl-1_06-08-2.pdf
-cp PDFFile/upl-1_06-08-2.pdf public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf
-cp PDFFile/upl-1_06-08-2.pdf upl-1_06-08-2.pdf
+# The WORKING template is: public/upl-1_06-08-2.pdf (1.7KB, PDF 1.7)
+cp public/upl-1_06-08-2.pdf PDFFile/upl-1_06-08-2.pdf
+cp public/upl-1_06-08-2.pdf upl-1_06-08-2.pdf
+# public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf should already be valid
 ```
 
-The PDFFile folder contains the official working templates that should be used as the source.
+The public folder contains the official working templates that should be used as the source.
 
 ## Technical Details
 The `UPL1PdfFiller` class:
@@ -62,6 +65,7 @@ The `UPL1PdfFiller` class:
 - Returns the filled PDF as bytes/blob
 
 The official template source:
-- Location: `PDFFile/upl-1_06-08-2.pdf`
+- Location: `public/upl-1_06-08-2.pdf` (**CORRECT SOURCE**)
 - This file should be treated as the authoritative source
-- Other locations are copies for application use
+- Size: 1.7KB, PDF 1.7, MD5: `4c547677cc6bb1893e2449198ab65e71`
+- Other locations (PDFFile, root) are copies synchronized from public
