@@ -17,6 +17,7 @@ import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { FillableFormPreview } from "./FillableFormPreview";
 import { PdfPreviewPopup } from "./PdfPreviewPopup";
+import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 
 interface AuthorizationFormDialogProps {
   isOpen: boolean;
@@ -319,14 +320,43 @@ export function AuthorizationFormDialog({
           <Button variant="outline" onClick={onClose} disabled={isGenerating}>
             Anuluj
           </Button>
-          <Button variant="secondary" onClick={handleDirectPdfPreview} disabled={isGenerating || !selectedClientId || !selectedEmployeeId}>
-            <Eye className="mr-2 h-4 w-4" />
-            {isGenerating ? 'Generowanie...' : 'Podgląd PDF'}
-          </Button>
-          <Button onClick={handleOpenFormPreview} disabled={isGenerating || !selectedClientId || !selectedEmployeeId}>
-            <FileText className="mr-2 h-4 w-4" />
-            Otwórz formularz
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button 
+                  variant="secondary" 
+                  onClick={handleDirectPdfPreview} 
+                  disabled={isGenerating || !selectedClientId || !selectedEmployeeId}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  {isGenerating ? 'Generowanie...' : 'Podgląd PDF'}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {(!selectedClientId || !selectedEmployeeId) && (
+              <TooltipContent>
+                <p>Wybierz klienta i pracownika aby wygenerować podgląd</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button 
+                  onClick={handleOpenFormPreview} 
+                  disabled={isGenerating || !selectedClientId || !selectedEmployeeId}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Otwórz formularz
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {(!selectedClientId || !selectedEmployeeId) && (
+              <TooltipContent>
+                <p>Wybierz klienta i pracownika aby otworzyć formularz</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
         </div>
       </DialogContent>
 
