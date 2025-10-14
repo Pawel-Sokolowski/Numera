@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { FileText, Download, Info } from "lucide-react";
+import { FileText, Download, Info, Eye } from "lucide-react";
 import { Client, User } from "../../types/client";
 import { 
   AuthorizationFormGenerator, 
@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { FillableFormPreview } from "./FillableFormPreview";
+import { PdfPreviewPopup } from "./PdfPreviewPopup";
 
 interface AuthorizationFormDialogProps {
   isOpen: boolean;
@@ -38,6 +39,10 @@ export function AuthorizationFormDialog({
   const [selectedCategory, setSelectedCategory] = useState<FormCategory>('pelnomocnictwa');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showFormPreview, setShowFormPreview] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string>('');
+  const [pdfCleanup, setPdfCleanup] = useState<(() => void) | null>(null);
 
   // Get forms by category
   const categorizedForms = useMemo(() => {
@@ -70,6 +75,58 @@ export function AuthorizationFormDialog({
 
     // Open the fillable form preview
     setShowFormPreview(true);
+  };
+
+  const handleDirectPdfPreview = async () => {
+    if (!selectedClientId || !selectedEmployeeId) {
+      toast.error("Wybierz klienta i pracownika");
+      return;
+    }
+
+    const client = clients.find(c => c.id === selectedClientId);
+    const employee = employees.find(e => e.id === selectedEmployeeId);
+
+    if (!client || !employee) {
+      toast.error("Nie znaleziono wybranego klienta lub pracownika");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      // Clean up previous PDF URL if exists
+      if (pdfCleanup) {
+        pdfCleanup();
+        setPdfCleanup(null);
+      }
+
+      // Generate PDF directly with current data for preview
+      const generator = new AuthorizationFormGenerator();
+      const { url, fileName, cleanup } = await generator.generateFormBlobUrl({
+        client,
+        employee,
+        formType,
+        additionalData: {
+          startDate: new Date().toLocaleDateString('pl-PL'),
+          scope: 'Reprezentowanie przed Urzędem Skarbowym w sprawach podatkowych'
+        }
+      });
+
+      setPdfPreviewUrl(url);
+      setPdfFileName(fileName);
+      setPdfCleanup(() => cleanup);
+      setShowPdfPreview(true);
+      toast.success("PDF został wygenerowany - możesz teraz wypełnić puste pola");
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error(`Błąd podczas generowania: ${error instanceof Error ? error.message : 'Nieznany błąd'}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleClosePdfPreview = () => {
+    setShowPdfPreview(false);
+    // Cleanup will happen on unmount or when generating new PDF
   };
 
   const handleGenerateFromPreview = async (updatedFields: Record<string, string>) => {
@@ -262,7 +319,11 @@ export function AuthorizationFormDialog({
           <Button variant="outline" onClick={onClose} disabled={isGenerating}>
             Anuluj
           </Button>
-          <Button onClick={handleOpenFormPreview} disabled={isGenerating}>
+          <Button variant="secondary" onClick={handleDirectPdfPreview} disabled={isGenerating || !selectedClientId || !selectedEmployeeId}>
+            <Eye className="mr-2 h-4 w-4" />
+            {isGenerating ? 'Generowanie...' : 'Podgląd PDF'}
+          </Button>
+          <Button onClick={handleOpenFormPreview} disabled={isGenerating || !selectedClientId || !selectedEmployeeId}>
             <FileText className="mr-2 h-4 w-4" />
             Otwórz formularz
           </Button>
@@ -280,6 +341,14 @@ export function AuthorizationFormDialog({
           onGenerate={handleGenerateFromPreview}
         />
       )}
+
+      {/* Direct PDF Preview Popup */}
+      <PdfPreviewPopup
+        isOpen={showPdfPreview}
+        onClose={handleClosePdfPreview}
+        pdfUrl={pdfPreviewUrl}
+        fileName={pdfFileName}
+      />
     </Dialog>
   );
 }
