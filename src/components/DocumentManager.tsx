@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "./ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Alert, AlertDescription } from "./ui/alert";
 import { 
   FileText, 
   Upload, 
@@ -22,11 +23,22 @@ import {
   Image,
   FileSpreadsheet,
   Calendar,
-  FilePlus
+  FilePlus,
+  AlertCircle,
+  Info
 } from "lucide-react";
 import { Client, User } from "../types/client";
 import { toast } from 'sonner';
 import { AuthorizationFormDialog } from "./gui/AuthorizationFormDialog";
+import { isBackendAvailable } from "../utils/backendDetection";
+import { 
+  getDocuments, 
+  saveDocument, 
+  deleteDocument, 
+  downloadDocument,
+  fileToBase64,
+  type StoredDocument 
+} from "../utils/documentStorage";
 
 interface Document {
   id: string;
@@ -55,6 +67,9 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isAuthFormDialogOpen, setIsAuthFormDialogOpen] = useState(false);
+  const [hasBackend, setHasBackend] = useState<boolean | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Mock employees for authorization forms
   const mockEmployees: User[] = [
@@ -90,40 +105,52 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
     }
   ];
 
+  // Check backend availability on mount
   useEffect(() => {
-    // Mock documents
-    const mockDocuments: Document[] = [
-      {
-        id: '1',
-        name: 'Umowa o prowadzenie księgowości',
-        type: 'contract',
-        category: 'księgowe',
-        clientId: clients[0]?.id || '1',
-        uploadDate: '2024-11-01',
-        lastModified: '2024-11-01',
-        size: 2048000,
-        fileType: 'application/pdf',
-        version: 1,
-        tags: ['umowa', 'księgowość'],
-        isArchived: false
-      },
-      {
-        id: '2',
-        name: 'Pełnomocnictwo do US',
-        type: 'authorization',
-        category: 'prawne',
-        clientId: clients[0]?.id || '1',
-        uploadDate: '2024-11-02',
-        lastModified: '2024-11-02',
-        size: 1024000,
-        fileType: 'application/pdf',
-        version: 1,
-        tags: ['pełnomocnictwo', 'urząd skarbowy'],
-        isArchived: false
-      }
-    ];
-    setDocuments(mockDocuments);
-  }, [clients]);
+    isBackendAvailable().then(setHasBackend);
+  }, []);
+
+  // Load documents from LocalStorage when backend is not available
+  useEffect(() => {
+    if (hasBackend === false) {
+      // Load from LocalStorage
+      const storedDocs = getDocuments();
+      setDocuments(storedDocs as unknown as Document[]);
+    } else if (hasBackend === true) {
+      // Load mock documents when backend is available (until backend API is implemented)
+      const mockDocuments: Document[] = [
+        {
+          id: '1',
+          name: 'Umowa o prowadzenie księgowości',
+          type: 'contract',
+          category: 'księgowe',
+          clientId: clients[0]?.id || '1',
+          uploadDate: '2024-11-01',
+          lastModified: '2024-11-01',
+          size: 2048000,
+          fileType: 'application/pdf',
+          version: 1,
+          tags: ['umowa', 'księgowość'],
+          isArchived: false
+        },
+        {
+          id: '2',
+          name: 'Pełnomocnictwo do US',
+          type: 'authorization',
+          category: 'prawne',
+          clientId: clients[0]?.id || '1',
+          uploadDate: '2024-11-02',
+          lastModified: '2024-11-02',
+          size: 1024000,
+          fileType: 'application/pdf',
+          version: 1,
+          tags: ['pełnomocnictwo', 'urząd skarbowy'],
+          isArchived: false
+        }
+      ];
+      setDocuments(mockDocuments);
+    }
+  }, [hasBackend, clients]);
 
   const [newDocument, setNewDocument] = useState({
     name: '',
@@ -155,39 +182,103 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
     return client ? `${client.firstName} ${client.lastName}` : 'Nieznany klient';
   };
 
-  const handleUploadDocument = () => {
+  const handleUploadDocument = async () => {
     if (!newDocument.name || !newDocument.clientId) {
       toast.error("Wprowadź nazwę dokumentu i wybierz klienta");
       return;
     }
 
-    const document: Document = {
-      id: Date.now().toString(),
-      name: newDocument.name,
-      type: newDocument.type,
-      category: newDocument.category,
-      clientId: newDocument.clientId,
-      uploadDate: new Date().toISOString().split('T')[0],
-      lastModified: new Date().toISOString().split('T')[0],
-      size: Math.floor(Math.random() * 5000000), // Random size for demo
-      fileType: 'application/pdf',
-      version: 1,
-      tags: newDocument.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-      notes: newDocument.notes,
-      isArchived: false
-    };
+    if (hasBackend === false && !selectedFile) {
+      toast.error("Wybierz plik do przesłania");
+      return;
+    }
 
-    setDocuments(prev => [...prev, document]);
-    setIsUploadDialogOpen(false);
-    setNewDocument({
-      name: '',
-      type: 'other',
-      category: 'inne',
-      clientId: '',
-      tags: '',
-      notes: ''
-    });
-    toast.success("Dokument został przesłany");
+    try {
+      let fileData: string | undefined;
+      let fileName: string | undefined;
+      let fileSize = 0;
+      let fileType = 'application/pdf';
+
+      if (selectedFile) {
+        // Convert file to base64 for storage
+        fileData = await fileToBase64(selectedFile);
+        fileName = selectedFile.name;
+        fileSize = selectedFile.size;
+        fileType = selectedFile.type;
+      } else {
+        // No file selected, create document without file data (demo mode)
+        fileSize = Math.floor(Math.random() * 5000000);
+      }
+
+      const document: StoredDocument = {
+        id: Date.now().toString(),
+        name: newDocument.name,
+        type: newDocument.type,
+        category: newDocument.category,
+        clientId: newDocument.clientId,
+        uploadDate: new Date().toISOString().split('T')[0],
+        lastModified: new Date().toISOString().split('T')[0],
+        size: fileSize,
+        fileType: fileType,
+        version: 1,
+        tags: newDocument.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        notes: newDocument.notes,
+        isArchived: false,
+        fileData,
+        fileName
+      };
+
+      if (hasBackend === false) {
+        // Save to LocalStorage
+        saveDocument(document);
+        setDocuments(prev => [...prev, document as unknown as Document]);
+        toast.success("Dokument został zapisany w pamięci lokalnej");
+      } else {
+        // TODO: Send to backend API when available
+        setDocuments(prev => [...prev, document as unknown as Document]);
+        toast.success("Dokument został przesłany");
+      }
+
+      // Reset form
+      setIsUploadDialogOpen(false);
+      setNewDocument({
+        name: '',
+        type: 'other',
+        category: 'inne',
+        clientId: '',
+        tags: '',
+        notes: ''
+      });
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Błąd podczas przesyłania dokumentu");
+      }
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (5MB limit)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error('Plik jest za duży. Maksymalny rozmiar to 5MB.');
+        event.target.value = '';
+        return;
+      }
+      setSelectedFile(file);
+      // Auto-fill name if empty
+      if (!newDocument.name) {
+        setNewDocument(prev => ({ ...prev, name: file.name }));
+      }
+    }
   };
 
   const filteredDocuments = documents.filter(doc => {
@@ -226,8 +317,22 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
   };
 
   const handleDownloadDocument = (document: Document) => {
-    toast.success(`Pobieranie dokumentu: ${document.name}`);
-    // TODO: Implement actual download functionality
+    try {
+      if (hasBackend === false) {
+        const storedDoc = document as unknown as StoredDocument;
+        if (storedDoc.fileData) {
+          downloadDocument(storedDoc);
+          toast.success(`Pobrano dokument: ${document.name}`);
+        } else {
+          toast.error('Dokument nie ma danych do pobrania');
+        }
+      } else {
+        toast.info(`Pobieranie dokumentu: ${document.name} (TODO: implementacja API)`);
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast.error('Błąd podczas pobierania dokumentu');
+    }
   };
 
   const handleEditDocument = (document: Document) => {
@@ -238,6 +343,9 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
   const handleDeleteDocument = (documentId: string) => {
     const document = documents.find(d => d.id === documentId);
     if (document) {
+      if (hasBackend === false) {
+        deleteDocument(documentId);
+      }
       setDocuments(prev => prev.filter(d => d.id !== documentId));
       toast.success(`Dokument "${document.name}" został usunięty`);
     }
@@ -245,6 +353,17 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
 
   return (
     <div className="space-y-6">
+      {/* Backend status alert */}
+      {hasBackend === false && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Tryb statyczny (GitHub Pages): Dokumenty są przechowywane lokalnie w przeglądarce. 
+            Aby uzyskać pełną funkcjonalność z bazą danych, wdróż aplikację z serwerem backend.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1>Zarządzanie Dokumentami</h1>
@@ -553,14 +672,56 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
               />
             </div>
 
-            <div className="border-2 border-dashed rounded-lg p-6 text-center">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                Przeciągnij plik tutaj lub kliknij, aby wybrać
-              </p>
-              <Button variant="outline" className="mt-2">
-                Wybierz plik
-              </Button>
+            <div className="space-y-2">
+              <Label>Plik dokumentu {hasBackend === false && '*'}</Label>
+              <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                {selectedFile ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{selectedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(selectedFile.size / 1024).toFixed(2)} KB
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                    >
+                      Usuń plik
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      {hasBackend === false 
+                        ? 'Wybierz plik do przesłania (wymagane)' 
+                        : 'Przeciągnij plik tutaj lub kliknij, aby wybrać'}
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-2"
+                      onClick={() => fileInputRef.current?.click()}
+                      type="button"
+                    >
+                      Wybierz plik
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Maksymalny rozmiar: 5MB
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end space-x-2">
