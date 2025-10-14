@@ -25,6 +25,7 @@ npm run dev
 
 ### Production Deployment
 
+**Option 1: Full Deployment (with Backend)**
 ```bash
 # Build the application
 npm run build
@@ -34,6 +35,21 @@ npm run start
 ```
 
 The application will be available at `http://localhost:3000`
+
+**Option 2: Static Deployment (GitHub Pages)**
+```bash
+# Build for static deployment
+npm run build
+
+# Deploy via GitHub Actions (automatic)
+# Or deploy the 'build' folder to any static hosting
+```
+
+The application works in two modes:
+- **Full Mode**: With backend server - all features available
+- **Static Mode**: GitHub Pages - documents stored in browser LocalStorage (limited to 5MB per file)
+
+See [docs/deployment/STATIC_DEPLOYMENT.md](docs/deployment/STATIC_DEPLOYMENT.md) for detailed comparison.
 
 ---
 

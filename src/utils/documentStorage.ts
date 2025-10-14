@@ -146,19 +146,19 @@ export function base64ToBlob(base64: string): Blob {
 /**
  * Download a document
  */
-export function downloadDocument(document: StoredDocument): void {
-  if (!document.fileData) {
+export function downloadDocument(doc: StoredDocument): void {
+  if (!doc.fileData) {
     throw new Error('Document has no file data');
   }
 
-  const blob = base64ToBlob(document.fileData);
+  const blob = base64ToBlob(doc.fileData);
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = window.document.createElement('a');
   a.href = url;
-  a.download = document.fileName || document.name;
-  document.body.appendChild(a);
+  a.download = doc.fileName || doc.name;
+  window.document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
+  window.document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
