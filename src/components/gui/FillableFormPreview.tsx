@@ -6,10 +6,11 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Download, Eye, Edit3, Save } from "lucide-react";
 import { Client, User } from "../../types/client";
-import { FormType } from "../../utils/authorizationFormGenerator";
+import { FormType, AuthorizationFormGenerator } from "../../utils/authorizationFormGenerator";
 import { toast } from 'sonner';
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
+import { PdfPreviewPopup } from "./PdfPreviewPopup";
 
 interface FormFieldDefinition {
   id: string;
@@ -39,6 +40,10 @@ export function FillableFormPreview({
   const [fields, setFields] = useState<FormFieldDefinition[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditing, setIsEditing] = useState(true);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string>('');
+  const [pdfCleanup, setPdfCleanup] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -48,6 +53,16 @@ export function FillableFormPreview({
       setIsEditing(true);
     }
   }, [isOpen, client, employee, formType]);
+
+  // Cleanup PDF URL on unmount or when preview closes
+  useEffect(() => {
+    return () => {
+      if (pdfCleanup) {
+        pdfCleanup();
+        setPdfCleanup(null);
+      }
+    };
+  }, [pdfCleanup]);
 
   const generateFormFields = (
     type: FormType, 
@@ -233,6 +248,71 @@ export function FillableFormPreview({
     ));
   };
 
+  const handlePreview = async () => {
+    setIsGenerating(true);
+    try {
+      // Clean up previous PDF URL if exists
+      if (pdfCleanup) {
+        pdfCleanup();
+        setPdfCleanup(null);
+      }
+
+      // Convert fields array to record for the generator
+      const fieldsRecord = fields.reduce((acc, field) => {
+        acc[field.id] = field.value;
+        return acc;
+      }, {} as Record<string, string>);
+
+      // Create updated client and employee objects with form data
+      const updatedClient: Client = {
+        ...client,
+        firstName: fieldsRecord.clientFirstName || client.firstName,
+        lastName: fieldsRecord.clientLastName || client.lastName,
+        nip: fieldsRecord.clientNIP || client.nip,
+        pesel: fieldsRecord.clientPESEL || client.pesel,
+        address: fieldsRecord.clientAddress || client.address,
+        city: fieldsRecord.clientCity || client.city,
+        postalCode: fieldsRecord.clientPostalCode || client.postalCode,
+        companyName: fieldsRecord.companyName || client.companyName,
+        regon: fieldsRecord.regon || client.regon,
+        taxOffice: fieldsRecord.taxOffice || client.taxOffice,
+      };
+
+      const updatedEmployee: User = {
+        ...employee,
+        firstName: fieldsRecord.employeeFirstName || employee.firstName,
+        lastName: fieldsRecord.employeeLastName || employee.lastName,
+        pesel: fieldsRecord.employeePESEL || employee.pesel,
+      };
+
+      const generator = new AuthorizationFormGenerator();
+      const { url, fileName, cleanup } = await generator.generateFormBlobUrl({
+        client: updatedClient,
+        employee: updatedEmployee,
+        formType,
+        additionalData: {
+          scope: fieldsRecord.scope,
+          startDate: fieldsRecord.startDate,
+          endDate: fieldsRecord.endDate,
+          taxOffice: fieldsRecord.taxOffice,
+          period: fieldsRecord.period,
+          year: fieldsRecord.taxYear,
+        }
+      });
+
+      setPdfPreviewUrl(url);
+      setPdfFileName(fileName);
+      setPdfCleanup(() => cleanup);
+      setShowPdfPreview(true);
+      toast.success("PDF został wygenerowany - możesz teraz wypełnić puste pola");
+    } catch (error) {
+      console.error('Error generating PDF preview:', error);
+      toast.error(`Błąd podczas generowania podglądu: ${error instanceof Error ? error.message : 'Nieznany błąd'}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
@@ -255,6 +335,11 @@ export function FillableFormPreview({
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleClosePdfPreview = () => {
+    setShowPdfPreview(false);
+    // Don't cleanup URL immediately - user might want to download
   };
 
   const getFormTitle = (type: FormType): string => {
@@ -397,12 +482,24 @@ export function FillableFormPreview({
           <Button variant="outline" onClick={onClose} disabled={isGenerating}>
             Anuluj
           </Button>
+          <Button variant="secondary" onClick={handlePreview} disabled={isGenerating}>
+            <Eye className="mr-2 h-4 w-4" />
+            {isGenerating ? 'Generowanie...' : 'Podgląd PDF'}
+          </Button>
           <Button onClick={handleGenerate} disabled={isGenerating}>
             <Download className="mr-2 h-4 w-4" />
             {isGenerating ? 'Generowanie...' : 'Generuj i pobierz'}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* PDF Preview Popup */}
+      <PdfPreviewPopup
+        isOpen={showPdfPreview}
+        onClose={handleClosePdfPreview}
+        pdfUrl={pdfPreviewUrl}
+        fileName={pdfFileName}
+      />
     </Dialog>
   );
 }

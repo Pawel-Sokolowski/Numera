@@ -20,6 +20,11 @@ export interface UPL1Data {
   taxOffice?: string;
 }
 
+export interface UPL1FillingOptions {
+  /** If true, keeps form fields editable instead of flattening them */
+  keepFieldsEditable?: boolean;
+}
+
 /**
  * Field coordinates for UPL-1 form
  * These coordinates are based on the official PDF form layout
@@ -71,9 +76,10 @@ export class UPL1PdfFiller {
   /**
    * Fill the UPL-1 form with provided data
    * @param data Client and employee data to fill the form
+   * @param options Filling options
    * @returns PDF bytes as Uint8Array
    */
-  async fillForm(data: UPL1Data): Promise<Uint8Array> {
+  async fillForm(data: UPL1Data, options: UPL1FillingOptions = {}): Promise<Uint8Array> {
     // Load the template PDF from public folder
     // In browser, fetch from the public URL
     // Try multiple paths for better compatibility
@@ -112,6 +118,16 @@ export class UPL1PdfFiller {
     const pages = pdfDoc.getPages();
     const firstPage = pages[0];
 
+    // Check if PDF has interactive form fields
+    const form = pdfDoc.getForm();
+    const formFields = form.getFields();
+    
+    // If the PDF has form fields and we want to keep them editable, use Acroform filling
+    if (formFields.length > 0 && options.keepFieldsEditable) {
+      return await this.fillFormWithAcrofields(pdfDoc, form, data);
+    }
+
+    // Otherwise, use coordinate-based filling (legacy method)
     // Embed a standard font that supports basic characters
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontSize = 10;
@@ -221,6 +237,86 @@ export class UPL1PdfFiller {
   }
 
   /**
+   * Fill form using Acroform fields (keeps fields editable)
+   * @param pdfDoc The PDF document
+   * @param form The PDF form
+   * @param data Form data
+   * @returns PDF bytes as Uint8Array
+   */
+  private async fillFormWithAcrofields(pdfDoc: PDFDocument, form: any, data: UPL1Data): Promise<Uint8Array> {
+    const { client, employee } = data;
+    
+    // Map field names to values
+    const fieldMappings: Record<string, string> = {
+      // Principal fields - try multiple common field name patterns
+      'principalName': `${client.firstName || ''} ${client.lastName || ''}`.trim(),
+      'mocodawca': `${client.firstName || ''} ${client.lastName || ''}`.trim(),
+      'nazwisko_imie': `${client.firstName || ''} ${client.lastName || ''}`.trim(),
+      'principalNIP': client.nip || '',
+      'nip': client.nip || '',
+      'principalREGON': client.regon || '',
+      'regon': client.regon || '',
+      'principalAddress': client.address?.street || (typeof client.address === 'string' ? client.address : ''),
+      'adres': client.address?.street || (typeof client.address === 'string' ? client.address : ''),
+      'principalCity': `${client.address?.zipCode || ''} ${client.address?.city || ''}`.trim(),
+      'miasto': `${client.address?.zipCode || ''} ${client.address?.city || ''}`.trim(),
+      
+      // Attorney fields
+      'attorneyName': `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
+      'pelnomocnik': `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
+      'attorneyPESEL': employee.pesel || '',
+      'pesel': employee.pesel || '',
+      
+      // Dates
+      'issueDate': data.startDate || new Date().toLocaleDateString('pl-PL'),
+      'data_wystawienia': data.startDate || new Date().toLocaleDateString('pl-PL'),
+      'startDate': data.startDate || '',
+      'data_od': data.startDate || '',
+      'endDate': data.endDate || '',
+      'data_do': data.endDate || '',
+    };
+
+    // Fill all form fields
+    const fields = form.getFields();
+    let filledCount = 0;
+    
+    for (const field of fields) {
+      try {
+        const fieldName = field.getName();
+        
+        // Try to find a matching value using fuzzy matching
+        let value = fieldMappings[fieldName];
+        
+        if (!value) {
+          // Try case-insensitive matching
+          const lowerFieldName = fieldName.toLowerCase();
+          for (const [key, val] of Object.entries(fieldMappings)) {
+            if (key.toLowerCase() === lowerFieldName || lowerFieldName.includes(key.toLowerCase())) {
+              value = val;
+              break;
+            }
+          }
+        }
+        
+        if (value && field.constructor.name === 'PDFTextField') {
+          const sanitizedValue = this.sanitizeText(value);
+          field.setText(sanitizedValue);
+          filledCount++;
+        }
+      } catch (error) {
+        console.warn(`Could not fill field ${field.getName()}:`, error);
+      }
+    }
+
+    console.log(`Filled ${filledCount} out of ${fields.length} form fields`);
+    
+    // Important: Don't flatten the form - keep fields editable
+    // Save without flattening
+    const pdfBytes = await pdfDoc.save({ useObjectStreams: false });
+    return pdfBytes;
+  }
+
+  /**
    * Sanitize text to handle Polish characters
    * Converts Polish characters to ASCII equivalents for PDF compatibility
    */
@@ -250,8 +346,8 @@ export class UPL1PdfFiller {
   /**
    * Generate a Blob from the filled PDF (for browser download)
    */
-  async fillFormAsBlob(data: UPL1Data): Promise<Blob> {
-    const pdfBytes = await this.fillForm(data);
+  async fillFormAsBlob(data: UPL1Data, options: UPL1FillingOptions = {}): Promise<Blob> {
+    const pdfBytes = await this.fillForm(data, options);
     return new Blob([pdfBytes], { type: 'application/pdf' });
   }
 }

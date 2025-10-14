@@ -255,10 +255,10 @@ export class AuthorizationFormGenerator {
     // Template-based PDF filling only - no programmatic generation
   }
 
-  async generateForm(data: AuthorizationFormData): Promise<Blob> {
+  async generateForm(data: AuthorizationFormData, keepFieldsEditable: boolean = false): Promise<Blob> {
     // Special handling for UPL-1 - use official PDF template with pdf-lib ONLY
     if (data.formType === 'UPL-1') {
-      return await this.generateUPL1FormFromTemplate(data);
+      return await this.generateUPL1FormFromTemplate(data, keepFieldsEditable);
     }
 
     // Special handling for PEL - use template-based approach
@@ -299,10 +299,29 @@ export class AuthorizationFormGenerator {
   }
 
   /**
+   * Generate a fillable PDF blob URL for preview in popup
+   * This returns a URL that can be used in an iframe
+   * Form fields will be kept editable so users can fill remaining fields
+   * @returns Object with the blob URL and cleanup function
+   */
+  async generateFormBlobUrl(data: AuthorizationFormData): Promise<{ url: string; fileName: string; cleanup: () => void }> {
+    // Generate with keepFieldsEditable = true for preview
+    const blob = await this.generateForm(data, true);
+    const fileName = `${data.formType}_${data.client.lastName}_${data.client.firstName}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const url = URL.createObjectURL(blob);
+    
+    return {
+      url,
+      fileName,
+      cleanup: () => URL.revokeObjectURL(url)
+    };
+  }
+
+  /**
    * Generate UPL-1 form using official PDF template and pdf-lib
    * Template-based approach ONLY - no fallback to programmatic generation
    */
-  private async generateUPL1FormFromTemplate(data: AuthorizationFormData): Promise<Blob> {
+  private async generateUPL1FormFromTemplate(data: AuthorizationFormData, keepFieldsEditable: boolean = false): Promise<Blob> {
     // Use pdf-lib with official template (template-based approach)
     const filler = new UPL1PdfFiller('/pdf-templates/UPL-1/2023/UPL-1_2023.pdf');
     try {
@@ -313,7 +332,7 @@ export class AuthorizationFormGenerator {
         endDate: data.additionalData?.endDate,
         scope: data.additionalData?.scope,
         taxOffice: data.additionalData?.taxOffice,
-      });
+      }, { keepFieldsEditable });
     } catch (error) {
       // Clear error message directing user to add the official PDF template
       throw new Error(
