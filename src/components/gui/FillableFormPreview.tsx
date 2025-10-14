@@ -470,10 +470,13 @@ export function FillableFormPreview({
 
             <div className="rounded-lg bg-blue-50 p-4 text-sm border border-blue-200">
               <p className="font-medium text-blue-900 mb-2">ℹ️ Informacja</p>
-              <p className="text-blue-700 text-xs">
-                Sprawdź wszystkie dane przed wygenerowaniem dokumentu. Po kliknięciu "Generuj i pobierz" 
-                dokument zostanie utworzony z aktualnymi wartościami i automatycznie pobrany na Twoje urządzenie.
+              <p className="text-blue-700 text-xs mb-2">
+                Sprawdź wszystkie dane przed wygenerowaniem dokumentu.
               </p>
+              <ul className="text-blue-700 text-xs space-y-1 list-disc list-inside">
+                <li><strong>Podgląd PDF</strong> - otwiera dokument w oknie podglądu, gdzie możesz wypełnić puste pola bezpośrednio w PDF</li>
+                <li><strong>Generuj i pobierz</strong> - tworzy dokument z aktualnymi wartościami i automatycznie go pobiera</li>
+              </ul>
             </div>
           </div>
         </ScrollArea>
