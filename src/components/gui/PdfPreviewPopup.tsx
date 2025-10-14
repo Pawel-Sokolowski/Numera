@@ -51,7 +51,7 @@ export function PdfPreviewPopup({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] h-[95vh] flex flex-col p-0">
+      <DialogContent className="max-w-[80vw] max-h-[80vh] h-[80vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center justify-between">
             <span>Podgląd PDF - {fileName}</span>

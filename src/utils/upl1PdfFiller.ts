@@ -90,27 +90,35 @@ export class UPL1PdfFiller {
       templateUrl = '/' + templateUrl;
     }
     
-    let response = await fetch(templateUrl);
+    // Get the base path from import.meta.env or use default
+    const basePath = import.meta.env.BASE_URL || '/';
+    
+    // Construct full URL with base path
+    let fullUrl = basePath === '/' ? templateUrl : `${basePath}${templateUrl.substring(1)}`;
+    
+    let response = await fetch(fullUrl);
     
     // If primary path fails, try alternative locations (including legacy path for backward compatibility)
     if (!response.ok) {
       console.log('Primary PDF path failed, trying alternative locations...');
       const alternativePaths = [
         '/upl-1_06-08-2.pdf',  // Legacy path for backward compatibility
-        '/pdf-templates/UPL-1/2023/UPL-1_2023.pdf'
+        '/pdf-templates/UPL-1/2023/UPL-1_2023.pdf',
+        '/pdf-templates/UPL-1/2023/UPL-1 2023.pdf'  // Try with space in filename
       ];
       
       for (const altPath of alternativePaths) {
-        response = await fetch(altPath);
+        const altFullUrl = basePath === '/' ? altPath : `${basePath}${altPath.substring(1)}`;
+        response = await fetch(altFullUrl);
         if (response.ok) {
-          console.log(`PDF loaded from alternative path: ${altPath}`);
+          console.log(`PDF loaded from alternative path: ${altFullUrl}`);
           break;
         }
       }
     }
     
     if (!response.ok) {
-      throw new Error(`Failed to load PDF template from ${templateUrl}: ${response.statusText}. Please ensure the official PDF file exists in the public folder at the correct path.`);
+      throw new Error(`Failed to load PDF template from ${fullUrl}: ${response.statusText}. Please ensure the official PDF file exists in the public folder at the correct path.`);
     }
     const pdfBytes = await response.arrayBuffer();
 
