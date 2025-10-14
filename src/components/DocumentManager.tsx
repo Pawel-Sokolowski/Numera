@@ -30,6 +30,7 @@ import {
 import { Client, User } from "../types/client";
 import { toast } from 'sonner';
 import { AuthorizationFormDialog } from "./gui/AuthorizationFormDialog";
+import { PdfPreviewPopup } from "./gui/PdfPreviewPopup";
 import { isBackendAvailable } from "../utils/backendDetection";
 import { 
   getDocuments, 
@@ -37,6 +38,7 @@ import {
   deleteDocument, 
   downloadDocument,
   fileToBase64,
+  base64ToBlob,
   type StoredDocument 
 } from "../utils/documentStorage";
 
@@ -70,6 +72,10 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
   const [hasBackend, setHasBackend] = useState<boolean | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string>('');
+  const [pdfCleanup, setPdfCleanup] = useState<(() => void) | null>(null);
 
   // Mock employees for authorization forms
   const mockEmployees: User[] = [
@@ -109,6 +115,15 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
   useEffect(() => {
     isBackendAvailable().then(setHasBackend);
   }, []);
+
+  // Cleanup PDF URL on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfCleanup) {
+        pdfCleanup();
+      }
+    };
+  }, [pdfCleanup]);
 
   // Load documents from LocalStorage when backend is not available
   useEffect(() => {
@@ -312,8 +327,36 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
   };
 
   const handlePreviewDocument = (document: Document) => {
-    toast.info(`Podgląd dokumentu: ${document.name}`);
-    // TODO: Implement document preview functionality
+    try {
+      // Clean up previous PDF URL if exists
+      if (pdfCleanup) {
+        pdfCleanup();
+        setPdfCleanup(null);
+      }
+
+      if (hasBackend === false) {
+        // In static mode, reconstruct PDF from base64 storage
+        const storedDoc = document as unknown as StoredDocument;
+        if (storedDoc.fileData) {
+          // Convert base64 to blob and create object URL
+          const blob = base64ToBlob(storedDoc.fileData);
+          const url = URL.createObjectURL(blob);
+          
+          setPdfPreviewUrl(url);
+          setPdfFileName(storedDoc.fileName || document.name);
+          setPdfCleanup(() => () => URL.revokeObjectURL(url));
+          setShowPdfPreview(true);
+        } else {
+          toast.error('Dokument nie ma danych do podglądu');
+        }
+      } else {
+        // In full mode with backend, would fetch from server
+        toast.info(`Podgląd dokumentu: ${document.name} (TODO: implementacja API)`);
+      }
+    } catch (error) {
+      console.error('Error previewing document:', error);
+      toast.error('Błąd podczas otwierania podglądu dokumentu');
+    }
   };
 
   const handleDownloadDocument = (document: Document) => {
@@ -743,6 +786,14 @@ export function DocumentManager({ clients }: DocumentManagerProps) {
         clients={clients}
         employees={mockEmployees}
         preSelectedClientId={selectedClient !== 'all' ? selectedClient : undefined}
+      />
+
+      {/* PDF Preview Popup */}
+      <PdfPreviewPopup
+        isOpen={showPdfPreview}
+        onClose={() => setShowPdfPreview(false)}
+        pdfUrl={pdfPreviewUrl}
+        fileName={pdfFileName}
       />
     </div>
   );
