@@ -111,10 +111,22 @@ This application is a **Progressive Web Application** that can be:
 
 ## 📖 Documentation
 
-- **[Web Deployment Guide](docs/development/WEB_DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+### Getting Started
+- **[Quick Start Guide](docs/guides/QUICK_START_PDF_FILLING.md)** - PDF form filling quickstart
 - **[Documentation Index](docs/README.md)** - Complete documentation overview
+
+### Deployment
+- **[Web Deployment Guide](docs/development/WEB_DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+- **[Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)** - General deployment overview
+- **[Static Deployment (GitHub Pages)](docs/deployment/STATIC_DEPLOYMENT.md)** - Static hosting guide
+
+### Features
+- **[🎯 Automated Field Detection](docs/features/AUTOMATED_FIELD_DETECTION_README.md)** - OCR-based form field detection
+- **[PDF Form Filling Test Results](docs/guides/PDF_FORM_FILLING_TEST_RESULTS.md)** - Test results and usage examples
+- **[Universal PDF Form Filling](docs/guides/UNIVERSAL_PDF_FORM_FILLING.md)** - Universal form filling guide
+
+### Development
 - **[API Documentation](docs/development/)** - Server API reference
-- **[🎯 Automated Field Detection](AUTOMATED_FIELD_DETECTION_README.md)** - NEW! Complete guide to OCR-based form field detection
 
 ---
 
