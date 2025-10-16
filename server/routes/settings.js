@@ -1,5 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter for read (GET) requests
+const getSettingsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests from this IP, please try again later.' }
+});
+
+// Rate limiter for write (PUT/POST) requests - more restrictive for settings
+const updateSettingsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: { error: 'Too many update requests from this IP, please try again later.' }
+});
 
 // In-memory storage for demo purposes (should use database in production)
 let settings = {
@@ -29,12 +44,12 @@ let settings = {
 };
 
 // Get all settings
-router.get('/', (req, res) => {
+router.get('/', getSettingsLimiter, (req, res) => {
   res.json(settings);
 });
 
 // Get specific setting category
-router.get('/:category', (req, res) => {
+router.get('/:category', getSettingsLimiter, (req, res) => {
   const { category } = req.params;
   if (settings[category]) {
     res.json(settings[category]);
@@ -44,7 +59,7 @@ router.get('/:category', (req, res) => {
 });
 
 // Update settings
-router.put('/:category', (req, res) => {
+router.put('/:category', updateSettingsLimiter, (req, res) => {
   const { category } = req.params;
   if (settings[category]) {
     settings[category] = { ...settings[category], ...req.body };
@@ -55,7 +70,7 @@ router.put('/:category', (req, res) => {
 });
 
 // Reset settings to defaults
-router.post('/reset', (req, res) => {
+router.post('/reset', updateSettingsLimiter, (req, res) => {
   settings = {
     company: {
       name: 'Biuro Rachunkowe ABC',

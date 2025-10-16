@@ -1,5 +1,27 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter for read (GET) requests
+const getChatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests from this IP, please try again later.' }
+});
+
+// Rate limiter for write (POST) requests
+const postMessageLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // limit each IP to 50 requests per windowMs (chat is more frequent)
+  message: { error: 'Too many message requests from this IP, please try again later.' }
+});
+
+// Rate limiter for delete requests
+const deleteChatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: { error: 'Too many delete requests from this IP, please try again later.' }
+});
 
 // In-memory storage for demo purposes (should use database in production)
 let messages = [
@@ -37,12 +59,12 @@ let rooms = [
 ];
 
 // Get all chat rooms
-router.get('/rooms', (req, res) => {
+router.get('/rooms', getChatLimiter, (req, res) => {
   res.json(rooms);
 });
 
 // Get messages for a room
-router.get('/rooms/:roomId/messages', (req, res) => {
+router.get('/rooms/:roomId/messages', getChatLimiter, (req, res) => {
   const { roomId } = req.params;
   const { limit = 50, offset = 0 } = req.query;
   
@@ -55,7 +77,7 @@ router.get('/rooms/:roomId/messages', (req, res) => {
 });
 
 // Send a message
-router.post('/messages', (req, res) => {
+router.post('/messages', postMessageLimiter, (req, res) => {
   const { userId, userName, content, roomId = 'general', type = 'text' } = req.body;
   
   if (!userId || !userName || !content) {
@@ -77,14 +99,14 @@ router.post('/messages', (req, res) => {
 });
 
 // Get user's chat history
-router.get('/users/:userId/messages', (req, res) => {
+router.get('/users/:userId/messages', getChatLimiter, (req, res) => {
   const { userId } = req.params;
   const userMessages = messages.filter(m => m.userId === userId);
   res.json(userMessages);
 });
 
 // Delete message (admin only in real app)
-router.delete('/messages/:messageId', (req, res) => {
+router.delete('/messages/:messageId', deleteChatLimiter, (req, res) => {
   const messageIndex = messages.findIndex(m => m.id === req.params.messageId);
   if (messageIndex === -1) {
     return res.status(404).json({ error: 'Message not found' });
@@ -95,7 +117,7 @@ router.delete('/messages/:messageId', (req, res) => {
 });
 
 // Create new chat room
-router.post('/rooms', (req, res) => {
+router.post('/rooms', postMessageLimiter, (req, res) => {
   const { name, description } = req.body;
   
   if (!name) {
