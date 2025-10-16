@@ -10,6 +10,9 @@ Getting started and user-focused documentation:
 - **[QUICK_REFERENCE.md](./guides/QUICK_REFERENCE.md)** - Quick reference for common tasks
 - **[INSTALLATION_GUIDE.md](./guides/INSTALLATION_GUIDE.md)** - Installation and setup instructions
 - **[PDF_GENERATION_GUIDE.md](./guides/PDF_GENERATION_GUIDE.md)** - Template-based PDF form filling guide
+- **[QUICK_START_PDF_FILLING.md](./guides/QUICK_START_PDF_FILLING.md)** - Quick start guide for PDF filling
+- **[PDF_FORM_FILLING_TEST_RESULTS.md](./guides/PDF_FORM_FILLING_TEST_RESULTS.md)** - PDF form filling test results
+- **[UNIVERSAL_PDF_FORM_FILLING.md](./guides/UNIVERSAL_PDF_FORM_FILLING.md)** - Universal PDF form filling guide
 
 ### `/development` - Developer Documentation
 Technical documentation for developers:
@@ -22,11 +25,18 @@ Technical documentation for developers:
 
 ### `/features` - Feature Documentation
 Detailed feature-specific documentation:
+- **[AUTOMATED_FIELD_DETECTION_README.md](./features/AUTOMATED_FIELD_DETECTION_README.md)** - 🎯 OCR-based automatic form field detection
 - **[FORM_AND_PAYMENT_INTEGRATION_GUIDE.md](./features/FORM_AND_PAYMENT_INTEGRATION_GUIDE.md)** - Form generation and payment tracking
 - **[TAX_FORM_SERVICE_GUIDE.md](./features/TAX_FORM_SERVICE_GUIDE.md)** - Tax form service usage
 - **[TAX_FORM_ARCHITECTURE.md](./features/TAX_FORM_ARCHITECTURE.md)** - Tax form system architecture
 - **[UPL1_IMPLEMENTATION_SUMMARY.md](./features/UPL1_IMPLEMENTATION_SUMMARY.md)** - UPL-1 form implementation
 - **[PDF_TEMPLATE_IMPLEMENTATION_SUMMARY.md](./features/PDF_TEMPLATE_IMPLEMENTATION_SUMMARY.md)** - PDF template system
+
+### `/deployment` - Deployment Guides
+Deployment and hosting documentation:
+- **[DEPLOYMENT_GUIDE.md](./deployment/DEPLOYMENT_GUIDE.md)** - General deployment guide
+- **[STATIC_DEPLOYMENT.md](./deployment/STATIC_DEPLOYMENT.md)** - Static hosting (GitHub Pages) guide
+- **[PWA_DEPLOYMENT.md](./deployment/PWA_DEPLOYMENT.md)** - Progressive Web App deployment
 
 ### `/archive` - Historical Documentation
 Older documentation and fix summaries kept for reference:
@@ -34,6 +44,9 @@ Older documentation and fix summaries kept for reference:
 - Migration summaries
 - Fix explanations
 - Historical guides
+- Button visibility explanations
+- PDF fix changelogs
+- Test logs and summaries
 
 ## 🚀 Quick Links
 
