@@ -1,8 +1,69 @@
 # Scripts Directory
 
-This directory contains utility scripts for development and testing.
+This directory contains utility scripts for installation, development, and testing.
 
-## Available Scripts
+## Installation Scripts
+
+### 🚀 install-local.sh
+**Automated local installation script** for development or single-user setups.
+
+```bash
+./scripts/install-local.sh
+```
+
+Features:
+- ✅ Checks prerequisites (Node.js, PostgreSQL)
+- ✅ Installs dependencies
+- ✅ Configures environment
+- ✅ Sets up database
+- ✅ Generates PWA icons
+- ✅ Optional production build
+
+Perfect for: Development, testing, single-user desktop use
+
+### 🏢 install-server.sh
+**Automated server installation script** for production deployments.
+
+```bash
+sudo ./scripts/install-server.sh
+```
+
+Features:
+- 🐳 Docker installation (recommended)
+- 📦 Native installation with PM2
+- 🔒 Secure secrets generation
+- 🗄️ Database setup
+- 🎯 Production optimization
+
+Perfect for: Production servers, multi-user environments
+
+### 📱 generate-pwa-icons.js
+Generates PWA icons from SVG source.
+
+```bash
+npm run generate-icons
+# or
+node scripts/generate-pwa-icons.js
+```
+
+Generates:
+- `icon-192.png` - PWA installation icon (192x192)
+- `icon-512.png` - PWA splash screen (512x512)
+- `apple-touch-icon.png` - iOS home screen (180x180)
+- `favicon-32x32.png` - Browser tab icon
+- `favicon-16x16.png` - Browser tab icon
+
+## Database Scripts
+
+### setup-database.js
+Sets up the database schema and initial configuration.
+
+**Usage:**
+```bash
+npm run setup-db
+```
+
+## Available Testing Scripts
 
 ### test-upl1-coordinates.js
 
