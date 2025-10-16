@@ -1,5 +1,27 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter for read (GET) requests
+const getUsersLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests from this IP, please try again later.' }
+});
+
+// Rate limiter for write (POST/PUT) requests
+const updateUserLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: { error: 'Too many update requests from this IP, please try again later.' }
+});
+
+// Rate limiter for delete requests
+const deleteUserLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: { error: 'Too many delete requests from this IP, please try again later.' }
+});
 
 // In-memory storage for demo purposes (should use database in production)
 let users = [
@@ -55,7 +77,7 @@ let users = [
 ];
 
 // Get all users
-router.get('/', (req, res) => {
+router.get('/', getUsersLimiter, (req, res) => {
   // Remove passwords from response
   const safeUsers = users.map(user => {
     const { password, ...safeUser } = user;
@@ -65,7 +87,7 @@ router.get('/', (req, res) => {
 });
 
 // Get user by ID
-router.get('/:id', (req, res) => {
+router.get('/:id', getUsersLimiter, (req, res) => {
   const user = users.find(u => u.id === req.params.id);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
@@ -75,7 +97,7 @@ router.get('/:id', (req, res) => {
 });
 
 // Create user
-router.post('/', (req, res) => {
+router.post('/', updateUserLimiter, (req, res) => {
   const { username, email, firstName, lastName, role, permissions } = req.body;
   
   if (!username || !email || !firstName || !lastName) {
@@ -107,7 +129,7 @@ router.post('/', (req, res) => {
 });
 
 // Update user
-router.put('/:id', (req, res) => {
+router.put('/:id', updateUserLimiter, (req, res) => {
   const userIndex = users.findIndex(u => u.id === req.params.id);
   if (userIndex === -1) {
     return res.status(404).json({ error: 'User not found' });
@@ -121,7 +143,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Update user permissions
-router.put('/:id/permissions', (req, res) => {
+router.put('/:id/permissions', updateUserLimiter, (req, res) => {
   const userIndex = users.findIndex(u => u.id === req.params.id);
   if (userIndex === -1) {
     return res.status(404).json({ error: 'User not found' });
@@ -132,7 +154,7 @@ router.put('/:id/permissions', (req, res) => {
 });
 
 // Deactivate user
-router.delete('/:id', (req, res) => {
+router.delete('/:id', deleteUserLimiter, (req, res) => {
   const userIndex = users.findIndex(u => u.id === req.params.id);
   if (userIndex === -1) {
     return res.status(404).json({ error: 'User not found' });

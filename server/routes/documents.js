@@ -1,5 +1,34 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter for read (GET) requests
+const getDocumentsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests from this IP, please try again later.' }
+});
+
+// Rate limiter for write (POST/PUT) requests
+const updateDocumentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 requests per windowMs
+  message: { error: 'Too many update requests from this IP, please try again later.' }
+});
+
+// Rate limiter for delete requests
+const deleteDocumentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: { error: 'Too many delete requests from this IP, please try again later.' }
+});
+
+// Rate limiter for document generation (more restrictive)
+const generateDocumentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: { error: 'Too many document generation requests from this IP, please try again later.' }
+});
 
 // In-memory storage for demo purposes (should use database in production)
 let documents = [
@@ -51,7 +80,7 @@ let categories = [
 ];
 
 // Get all documents
-router.get('/', (req, res) => {
+router.get('/', getDocumentsLimiter, (req, res) => {
   const { category, clientId, archived = 'false' } = req.query;
   
   let filteredDocuments = documents;
@@ -74,7 +103,7 @@ router.get('/', (req, res) => {
 });
 
 // Get document by ID
-router.get('/:id', (req, res) => {
+router.get('/:id', getDocumentsLimiter, (req, res) => {
   const document = documents.find(doc => doc.id === req.params.id);
   if (!document) {
     return res.status(404).json({ error: 'Document not found' });
@@ -83,7 +112,7 @@ router.get('/:id', (req, res) => {
 });
 
 // Upload document (mock)
-router.post('/', (req, res) => {
+router.post('/', updateDocumentLimiter, (req, res) => {
   const { name, type, category, clientId, uploadedBy, tags = [] } = req.body;
   
   if (!name || !type || !category) {
@@ -108,7 +137,7 @@ router.post('/', (req, res) => {
 });
 
 // Update document
-router.put('/:id', (req, res) => {
+router.put('/:id', updateDocumentLimiter, (req, res) => {
   const documentIndex = documents.findIndex(doc => doc.id === req.params.id);
   if (documentIndex === -1) {
     return res.status(404).json({ error: 'Document not found' });
@@ -121,7 +150,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Archive document
-router.put('/:id/archive', (req, res) => {
+router.put('/:id/archive', updateDocumentLimiter, (req, res) => {
   const documentIndex = documents.findIndex(doc => doc.id === req.params.id);
   if (documentIndex === -1) {
     return res.status(404).json({ error: 'Document not found' });
@@ -132,7 +161,7 @@ router.put('/:id/archive', (req, res) => {
 });
 
 // Delete document
-router.delete('/:id', (req, res) => {
+router.delete('/:id', deleteDocumentLimiter, (req, res) => {
   const documentIndex = documents.findIndex(doc => doc.id === req.params.id);
   if (documentIndex === -1) {
     return res.status(404).json({ error: 'Document not found' });
@@ -143,12 +172,12 @@ router.delete('/:id', (req, res) => {
 });
 
 // Get document categories
-router.get('/categories', (req, res) => {
+router.get('/categories', getDocumentsLimiter, (req, res) => {
   res.json(categories);
 });
 
 // Search documents
-router.get('/search/:query', (req, res) => {
+router.get('/search/:query', getDocumentsLimiter, (req, res) => {
   const { query } = req.params;
   const searchResults = documents.filter(doc => 
     doc.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -159,7 +188,7 @@ router.get('/search/:query', (req, res) => {
 });
 
 // Generate authorization form (UPL-1, PEL)
-router.post('/generate-authorization', (req, res) => {
+router.post('/generate-authorization', generateDocumentLimiter, (req, res) => {
   const { formType, clientId, employeeId, clientName, employeeName } = req.body;
   
   if (!formType || !clientId || !employeeId) {

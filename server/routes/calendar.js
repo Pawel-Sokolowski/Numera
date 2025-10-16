@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
+const rateLimit = require('express-rate-limit');
 
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
@@ -10,8 +11,22 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'password',
 });
 
+// Rate limiter for read (GET) requests
+const getEventsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests from this IP, please try again later.' }
+});
+
+// Rate limiter for write (POST) requests
+const createEventLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: { error: 'Too many event creation requests from this IP, please try again later.' }
+});
+
 // Get calendar events
-router.get('/events', async (req, res) => {
+router.get('/events', getEventsLimiter, async (req, res) => {
   try {
     const query = `
       SELECT * FROM calendar_events
@@ -27,7 +42,7 @@ router.get('/events', async (req, res) => {
 });
 
 // Create calendar event
-router.post('/events', async (req, res) => {
+router.post('/events', createEventLimiter, async (req, res) => {
   try {
     const { title, description, startDate, endDate, attendees } = req.body;
     
