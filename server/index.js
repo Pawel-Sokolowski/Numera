@@ -114,14 +114,14 @@ app.post('/api/db-query', strictLimiter, async (req, res) => {
     const { table } = req.body;
     const allowedTables = ['users', 'projects', 'tasks', 'clients']; // Whitelist allowed table names
     
-    // Validate table name against whitelist
-    if (!table || !sqlSafe.validateTableName(table, allowedTables)) {
+    // Validate table name against whitelist, and get canonical name
+    const tableLower = typeof table === 'string' ? table.toLowerCase() : '';
+    if (!allowedTables.includes(tableLower)) {
       return res.status(400).json({ success: false, error: 'Invalid table name' });
     }
     
-    // Use parameterized query with proper identifier escaping
-    const escapedTable = sqlSafe.escapeIdentifier(table);
-    const result = await pool.query(`SELECT * FROM ${escapedTable} LIMIT 100`);
+    // Use canonical table name for query; identifiers in allowedTables are trusted
+    const result = await pool.query(`SELECT * FROM "${tableLower}" LIMIT 100`);
     
     res.json({ 
       success: true, 
