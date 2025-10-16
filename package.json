@@ -71,6 +71,7 @@
             "@types/node": "^20.19.21",
             "@vitejs/plugin-react-swc": "^3.10.2",
             "concurrently": "^9.2.1",
+            "sharp": "^0.34.4",
             "ts-node": "^10.9.2",
             "typescript": "^5.9.3",
             "vite": "^6.3.6"
@@ -84,6 +85,13 @@
             "setup-db": "node scripts/setup-database.js",
             "start": "npm run build && npm run server:prod",
             "test:pdf-filling": "npx ts-node scripts/testPdfFormFillingOptions.ts",
-            "test:universal-pdf-filling": "npx ts-node scripts/testUniversalPdfFormFilling.ts"
+            "test:universal-pdf-filling": "npx ts-node scripts/testUniversalPdfFormFilling.ts",
+            "generate-icons": "node scripts/generate-pwa-icons.js",
+            "install:local": "./scripts/install-local.sh",
+            "install:server": "./scripts/install-server.sh",
+            "docker:build": "docker-compose build",
+            "docker:up": "docker-compose up -d",
+            "docker:down": "docker-compose down",
+            "docker:logs": "docker-compose logs -f"
       }
 }

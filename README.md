@@ -6,7 +6,28 @@ A comprehensive office management system built as a **Progressive Web Applicatio
 
 ## 🚀 Quick Start
 
-### Installation
+### Installation Options
+
+Choose the installation method that fits your needs:
+
+#### Option 1: Automated Local Installation (Recommended for Development)
+
+```bash
+# Clone repository
+git clone https://github.com/Pawel-Sokolowski/Numera.git
+cd Numera
+
+# Run automated installation script
+./scripts/install-local.sh
+```
+
+The script will guide you through:
+- ✅ Dependency installation
+- ✅ Database setup
+- ✅ Environment configuration
+- ✅ PWA icon generation
+
+#### Option 2: Manual Installation
 
 ```bash
 # Clone repository
@@ -16,6 +37,9 @@ cd Numera
 # Install dependencies
 npm install
 
+# Generate PWA icons
+npm run generate-icons
+
 # Setup database (PostgreSQL required)
 npm run setup-db
 
@@ -23,20 +47,49 @@ npm run setup-db
 npm run dev
 ```
 
+#### Option 3: Server Installation (Docker or Native)
+
+```bash
+# Clone repository
+git clone https://github.com/Pawel-Sokolowski/Numera.git
+cd Numera
+
+# Run server installation script
+sudo ./scripts/install-server.sh
+```
+
+Choose between:
+- **Docker** - Containerized deployment (recommended)
+- **Native** - Direct installation with PM2
+
+See [Server Installation Guide](docs/guides/SERVER_INSTALLATION.md) for details.
+
 ### Production Deployment
 
-**Option 1: Full Deployment (with Backend)**
+**Option 1: Docker Deployment (Recommended)**
+```bash
+# Configure environment
+cp .env.example .env
+nano .env  # Edit configuration
+
+# Start with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+**Option 2: Native Server Deployment**
 ```bash
 # Build the application
 npm run build
 
-# Start production server
-npm run start
+# Start with PM2
+pm2 start ecosystem.config.js
+pm2 save
 ```
 
-The application will be available at `http://localhost:3000`
-
-**Option 2: Static Deployment (GitHub Pages)**
+**Option 3: Static Deployment (GitHub Pages)**
 ```bash
 # Build for static deployment
 npm run build
@@ -49,7 +102,10 @@ The application works in two modes:
 - **Full Mode**: With backend server - all features available
 - **Static Mode**: GitHub Pages - documents stored in browser LocalStorage (limited to 5MB per file)
 
-See [docs/deployment/STATIC_DEPLOYMENT.md](docs/deployment/STATIC_DEPLOYMENT.md) for detailed comparison.
+See deployment guides:
+- **[Server Installation Guide](docs/guides/SERVER_INSTALLATION.md)** - Complete production setup
+- **[Static Deployment](docs/deployment/STATIC_DEPLOYMENT.md)** - GitHub Pages setup
+- **[Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)** - Security and configuration
 
 ---
 
@@ -115,10 +171,15 @@ This application is a **Progressive Web Application** that can be:
 - **[Quick Start Guide](docs/guides/QUICK_START_PDF_FILLING.md)** - PDF form filling quickstart
 - **[Documentation Index](docs/README.md)** - Complete documentation overview
 
+### Installation
+- **[Local Installation Guide](docs/guides/LOCAL_INSTALLATION.md)** - Complete local setup for advanced users
+- **[Server Installation Guide](docs/guides/SERVER_INSTALLATION.md)** - Production server deployment (Docker/Native)
+
 ### Deployment
-- **[Web Deployment Guide](docs/development/WEB_DEPLOYMENT_GUIDE.md)** - Production deployment instructions
-- **[Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)** - General deployment overview
+- **[Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)** - Security and production configuration
+- **[PWA Deployment](docs/deployment/PWA_DEPLOYMENT.md)** - PWA-specific deployment details
 - **[Static Deployment (GitHub Pages)](docs/deployment/STATIC_DEPLOYMENT.md)** - Static hosting guide
+- **[Web Deployment Guide](docs/development/WEB_DEPLOYMENT_GUIDE.md)** - General deployment instructions
 
 ### Features
 - **[🎯 Automated Field Detection](docs/features/AUTOMATED_FIELD_DETECTION_README.md)** - OCR-based form field detection
@@ -134,12 +195,31 @@ This application is a **Progressive Web Application** that can be:
 
 ### Available Scripts
 
+**Development:**
 - `npm run dev` - Start development server (with hot reload)
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
 - `npm run server` - Start backend server only
+- `npm run preview` - Preview production build
+
+**Production:**
+- `npm run build` - Build for production
+- `npm run start` - Build and start production server
 - `npm run server:prod` - Start backend in production mode
+
+**Setup:**
 - `npm run setup-db` - Run database setup wizard
+- `npm run generate-icons` - Generate PWA icons from SVG
+- `npm run install:local` - Automated local installation
+- `npm run install:server` - Automated server installation
+
+**Docker:**
+- `npm run docker:build` - Build Docker images
+- `npm run docker:up` - Start Docker containers
+- `npm run docker:down` - Stop Docker containers
+- `npm run docker:logs` - View Docker logs
+
+**Testing:**
+- `npm run test:pdf-filling` - Test PDF form filling
+- `npm run test:universal-pdf-filling` - Test universal PDF filling
 
 ### Project Structure
 
