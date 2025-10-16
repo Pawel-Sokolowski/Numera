@@ -11,6 +11,8 @@ import { Login } from "./components/Login";
 import { DatabaseSetupWizard } from "./components/DatabaseSetupWizard";
 import { Toaster } from "./components/ui/sonner";
 import { LoadingSpinner } from "./components/common/LoadingSpinner";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
+import { StaticModeBanner } from "./components/common/StaticModeBanner";
 import { PermissionProvider } from "./contexts/PermissionContext";
 import { LayoutDashboard, Users, UserPlus, MessageSquare, Mail, FileText, Settings, CalendarDays, UserCog, MailOpen, FolderOpen, BarChart3, CreditCard, ScrollText, Building2, Timer } from "lucide-react";
 import { toast } from 'sonner';
@@ -285,129 +287,161 @@ export default function App() {
         ) : null;
       case 'chat':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <TeamChat currentUser={currentUser} allUsers={users} />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <TeamChat currentUser={currentUser} allUsers={users} />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'email':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <EnhancedEmailCenter 
-              clients={clients} 
-              templates={emailTemplates}
-              emails={emails}
-              onSendEmail={addEmail}
-              onUpdateEmail={updateEmail}
-              onDeleteEmail={deleteEmail}
-            />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <EnhancedEmailCenter 
+                clients={clients} 
+                templates={emailTemplates}
+                emails={emails}
+                onSendEmail={addEmail}
+                onUpdateEmail={updateEmail}
+                onDeleteEmail={deleteEmail}
+              />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'invoices':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <EnhancedInvoiceManager clients={clients} />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <EnhancedInvoiceManager clients={clients} />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'calendar':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <AdvancedCalendar currentUser={currentUser} allUsers={users} />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <AdvancedCalendar currentUser={currentUser} allUsers={users} />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'users':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <UserManagement />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <UserManagement />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'email-templates':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <EmailTemplates 
-              templates={emailTemplates}
-              onSaveTemplate={(template) => {
-                if (template.id) {
-                  setEmailTemplates(prev => prev.map(t => t.id === template.id ? template : t));
-                  toast.success("Szablon został zaktualizowany");
-                } else {
-                  const newTemplate = { ...template, id: Date.now().toString() };
-                  setEmailTemplates(prev => [...prev, newTemplate]);
-                  toast.success("Nowy szablon został utworzony");
-                }
-              }}
-              onDeleteTemplate={(templateId) => {
-                setEmailTemplates(prev => prev.filter(t => t.id !== templateId));
-                toast.success("Szablon został usunięty");
-              }}
-            />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <EmailTemplates 
+                templates={emailTemplates}
+                onSaveTemplate={(template) => {
+                  if (template.id) {
+                    setEmailTemplates(prev => prev.map(t => t.id === template.id ? template : t));
+                    toast.success("Szablon został zaktualizowany");
+                  } else {
+                    const newTemplate = { ...template, id: Date.now().toString() };
+                    setEmailTemplates(prev => [...prev, newTemplate]);
+                    toast.success("Nowy szablon został utworzony");
+                  }
+                }}
+                onDeleteTemplate={(templateId) => {
+                  setEmailTemplates(prev => prev.filter(t => t.id !== templateId));
+                  toast.success("Szablon został usunięty");
+                }}
+              />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'invoice-templates':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <InvoiceTemplates />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <InvoiceTemplates />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'profile':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <UserProfileManagement 
-              user={currentUser as any} 
-              onSave={(updatedUser) => {
-                setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updatedUser } : u));
-                toast.success("Profil został zaktualizowany");
-              }}
-              isAdmin={currentUser.role === 'administrator'}
-            />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <UserProfileManagement 
+                user={currentUser as any} 
+                onSave={(updatedUser) => {
+                  setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updatedUser } : u));
+                  toast.success("Profil został zaktualizowany");
+                }}
+                isAdmin={currentUser.role === 'administrator'}
+              />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'documents':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <DocumentManager clients={clients} />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <DocumentManager clients={clients} />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'monthly-data':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <MonthlyDataPanel clients={clients} />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <MonthlyDataPanel clients={clients} />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'settings':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <SystemSettings />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <SystemSettings />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'bank-integration':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <BankIntegration />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <BankIntegration />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'contracts':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <ContractManagement />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <ContractManagement />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'time-tracker':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <TimeTracker currentUser={currentUser} />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <TimeTracker currentUser={currentUser} />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'work-time-report':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <WorkTimeReport currentUser={currentUser} clients={clients} users={users} />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <WorkTimeReport currentUser={currentUser} clients={clients} users={users} />
+            </Suspense>
+          </ErrorBoundary>
         );
       case 'auto-invoicing':
         return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <AutomaticInvoicing clients={clients} />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <AutomaticInvoicing clients={clients} />
+            </Suspense>
+          </ErrorBoundary>
         );
       default:
         return <Dashboard currentUser={currentUser} onNavigate={setCurrentView} />;
@@ -640,6 +674,8 @@ export default function App() {
               <ThemeToggle />
             </div>
           </header>
+          
+          <StaticModeBanner />
           
           <div className="flex-1 overflow-auto p-6">
             {renderContent()}
