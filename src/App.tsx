@@ -12,6 +12,7 @@ import { DatabaseSetupWizard } from "./components/DatabaseSetupWizard";
 import { Toaster } from "./components/ui/sonner";
 import { LoadingSpinner } from "./components/common/LoadingSpinner";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
+import { StaticModeBanner } from "./components/common/StaticModeBanner";
 import { PermissionProvider } from "./contexts/PermissionContext";
 import { LayoutDashboard, Users, UserPlus, MessageSquare, Mail, FileText, Settings, CalendarDays, UserCog, MailOpen, FolderOpen, BarChart3, CreditCard, ScrollText, Building2, Timer } from "lucide-react";
 import { toast } from 'sonner';
@@ -673,6 +674,8 @@ export default function App() {
               <ThemeToggle />
             </div>
           </header>
+          
+          <StaticModeBanner />
           
           <div className="flex-1 overflow-auto p-6">
             {renderContent()}
