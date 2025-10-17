@@ -110,6 +110,8 @@
     "server": "node server/index.js",
     "server:prod": "NODE_ENV=production node server/index.js",
     "setup-db": "node scripts/setup-database.js",
+    "migrate": "node server/utils/migrate.js",
+    "seed": "node server/seeds/development.js",
     "start": "npm run build && npm run server:prod",
     "test": "vitest",
     "test:ui": "vitest --ui",
