@@ -37,6 +37,17 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate limiter for user data retrieval (generous)
+const userDataLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    error: 'Too many requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Login validation schema
 const loginSchema = {
   email: {
@@ -188,7 +199,7 @@ const verifyToken = (req, res, next) => {
 };
 
 // Get current user
-router.get('/me', verifyToken, async (req, res) => {
+router.get('/me', verifyToken, userDataLimiter, async (req, res) => {
   try {
     const userQuery = 'SELECT * FROM users WHERE id = $1';
     const result = await pool.query(userQuery, [req.user.userId]);
