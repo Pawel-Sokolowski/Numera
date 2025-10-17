@@ -1,43 +1,18 @@
-import { Clock, Zap } from "lucide-react";
-import { useState, lazy, Suspense, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "./components/ui/sidebar";
 import { ThemeToggle } from "./components/gui/ThemeToggle";
 import { ActiveTimerDisplay } from "./components/gui/ActiveTimerDisplay";
-import { Dashboard } from "./components/Dashboard";
-import { ClientForm } from "./components/ClientForm";
-import { ClientList } from "./components/ClientList";
-import { ClientDetails } from "./components/ClientDetails";
 import { Login } from "./components/Login";
 import { DatabaseSetupWizard } from "./components/DatabaseSetupWizard";
 import { Toaster } from "./components/ui/sonner";
 import { LoadingSpinner } from "./components/common/LoadingSpinner";
-import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { StaticModeBanner } from "./components/common/StaticModeBanner";
 import { PermissionProvider } from "./contexts/PermissionContext";
-import { LayoutDashboard, Users, UserPlus, MessageSquare, Mail, FileText, Settings, CalendarDays, UserCog, MailOpen, FolderOpen, BarChart3, CreditCard, ScrollText, Building2, Timer } from "lucide-react";
 import { toast } from 'sonner';
 import { Client, User, EmailTemplate, Email } from "./types/client";
 import { electronAPI, isElectron } from "./utils/electronAPI";
-
-// Lazy load heavy components to reduce initial bundle size
-const AutomaticInvoicing = lazy(() => import("./components/AutomaticInvoicing").then(module => ({ default: module.AutomaticInvoicing })));
-const BankIntegration = lazy(() => import("./components/BankIntegration").then(module => ({ default: module.BankIntegration })));
-const ContractManagement = lazy(() => import("./components/ContractManagement").then(module => ({ default: module.ContractManagement })));
-const TeamChat = lazy(() => import("./components/TeamChat").then(module => ({ default: module.TeamChat })));
-const EnhancedEmailCenter = lazy(() => import("./components/EnhancedEmailCenter").then(module => ({ default: module.EnhancedEmailCenter })));
-const EnhancedInvoiceManager = lazy(() => import("./components/EnhancedInvoiceManager").then(module => ({ default: module.EnhancedInvoiceManager })));
-const AdvancedCalendar = lazy(() => import("./components/AdvancedCalendar").then(module => ({ default: module.AdvancedCalendar })));
-const UserManagement = lazy(() => import("./components/UserManagement").then(module => ({ default: module.UserManagement })));
-const InvoiceTemplates = lazy(() => import("./components/SimpleInvoiceTemplates").then(module => ({ default: module.SimpleInvoiceTemplates })));
-const EmailTemplates = lazy(() => import("./components/EmailTemplates").then(module => ({ default: module.EmailTemplates })));
-const UserProfileManagement = lazy(() => import("./components/UserProfileManagement").then(module => ({ default: module.UserProfileManagement })));
-const DocumentManager = lazy(() => import("./components/DocumentManager").then(module => ({ default: module.DocumentManager })));
-const MonthlyDataPanel = lazy(() => import("./components/MonthlyDataPanel").then(module => ({ default: module.MonthlyDataPanel })));
-const SystemSettings = lazy(() => import("./components/SystemSettings").then(module => ({ default: module.SystemSettings })));
-const TimeTracker = lazy(() => import("./components/TimeTracker").then(module => ({ default: module.TimeTracker })));
-const WorkTimeReport = lazy(() => import("./components/WorkTimeReport").then(module => ({ default: module.WorkTimeReport })));
-
-type View = 'dashboard' | 'clients' | 'add-client' | 'edit-client' | 'view-client' | 'chat' | 'email' | 'invoices' | 'calendar' | 'users' | 'email-templates' | 'invoice-templates' | 'profile' | 'documents' | 'monthly-data' | 'settings' | 'bank-integration' | 'contracts' | 'time-tracker' | 'work-time-report' | 'auto-invoicing';
+import { menuSections, type View } from "./config/menuConfig";
+import { renderRoute } from "./utils/routeRenderer";
 
 // Mock data - should be moved to separate file
 import { mockClients } from "./data/mockClients";
@@ -125,7 +100,7 @@ export default function App() {
       } else {
         // For web version, check via API
         try {
-          const response = await fetch('/api/db-status');
+          const response = await window.fetch('/api/db-status');
           const data = await response.json();
           if (data.requiresSetup || !data.connected) {
             setDatabaseSetupRequired(true);
@@ -217,7 +192,7 @@ export default function App() {
   };
 
   const handleDeleteClient = (clientId: string) => {
-    if (confirm('Czy na pewno chcesz usunąć tego klienta?')) {
+    if (window.confirm('Czy na pewno chcesz usunąć tego klienta?')) {
       setClients(prev => prev.filter(client => client.id !== clientId));
       toast.success("Klient został usunięty pomyślnie");
     }
@@ -248,313 +223,52 @@ export default function App() {
     setCurrentView('clients');
   };
 
-  const renderContent = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return <Dashboard currentUser={currentUser} onNavigate={setCurrentView} />;
-      case 'clients':
-        return (
-          <ClientList
-            clients={clients}
-            onViewClient={handleViewClient}
-            onEditClient={handleEditClient}
-            onDeleteClient={handleDeleteClient}
-            onAddClient={handleAddClient}
-          />
-        );
-      case 'add-client':
-        return (
-          <ClientForm
-            onSave={handleSaveClient}
-            onCancel={handleCancelForm}
-          />
-        );
-      case 'edit-client':
-        return selectedClient ? (
-          <ClientForm
-            client={selectedClient}
-            onSave={handleSaveClient}
-            onCancel={handleCancelForm}
-          />
-        ) : null;
-      case 'view-client':
-        return selectedClient ? (
-          <ClientDetails
-            client={selectedClient}
-            onBack={handleBackToClients}
-            onEdit={handleEditClient}
-          />
-        ) : null;
-      case 'chat':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <TeamChat currentUser={currentUser} allUsers={users} />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'email':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <EnhancedEmailCenter 
-                clients={clients} 
-                templates={emailTemplates}
-                emails={emails}
-                onSendEmail={addEmail}
-                onUpdateEmail={updateEmail}
-                onDeleteEmail={deleteEmail}
-              />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'invoices':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <EnhancedInvoiceManager clients={clients} />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'calendar':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <AdvancedCalendar currentUser={currentUser} allUsers={users} />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'users':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <UserManagement />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'email-templates':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <EmailTemplates 
-                templates={emailTemplates}
-                onSaveTemplate={(template) => {
-                  if (template.id) {
-                    setEmailTemplates(prev => prev.map(t => t.id === template.id ? template : t));
-                    toast.success("Szablon został zaktualizowany");
-                  } else {
-                    const newTemplate = { ...template, id: Date.now().toString() };
-                    setEmailTemplates(prev => [...prev, newTemplate]);
-                    toast.success("Nowy szablon został utworzony");
-                  }
-                }}
-                onDeleteTemplate={(templateId) => {
-                  setEmailTemplates(prev => prev.filter(t => t.id !== templateId));
-                  toast.success("Szablon został usunięty");
-                }}
-              />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'invoice-templates':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <InvoiceTemplates />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'profile':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <UserProfileManagement 
-                user={currentUser as any} 
-                onSave={(updatedUser) => {
-                  setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updatedUser } : u));
-                  toast.success("Profil został zaktualizowany");
-                }}
-                isAdmin={currentUser.role === 'administrator'}
-              />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'documents':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <DocumentManager clients={clients} />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'monthly-data':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <MonthlyDataPanel clients={clients} />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'settings':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <SystemSettings />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'bank-integration':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <BankIntegration />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'contracts':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <ContractManagement />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'time-tracker':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <TimeTracker currentUser={currentUser} />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'work-time-report':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <WorkTimeReport currentUser={currentUser} clients={clients} users={users} />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      case 'auto-invoicing':
-        return (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <AutomaticInvoicing clients={clients} />
-            </Suspense>
-          </ErrorBoundary>
-        );
-      default:
-        return <Dashboard currentUser={currentUser} onNavigate={setCurrentView} />;
+  const handleSaveEmailTemplate = (template: EmailTemplate) => {
+    if (template.id) {
+      setEmailTemplates(prev => prev.map(t => t.id === template.id ? template : t));
+      toast.success("Szablon został zaktualizowany");
+    } else {
+      const newTemplate = { ...template, id: Date.now().toString() };
+      setEmailTemplates(prev => [...prev, newTemplate]);
+      toast.success("Nowy szablon został utworzony");
     }
   };
 
-  const menuItems = [
-    {
-      title: "Panel Główny",
-      icon: LayoutDashboard,
-      onClick: () => setCurrentView('dashboard'),
-      active: currentView === 'dashboard'
-    },
-    {
-      title: "Wszyscy Klienci",
-      icon: Users,
-      onClick: () => setCurrentView('clients'),
-      active: currentView === 'clients'
-    },
-    {
-      title: "Dokumenty",
-      icon: FolderOpen,
-      onClick: () => setCurrentView('documents'),
-      active: currentView === 'documents'
-    },
-    {
-      title: "Dane Miesięczne",
-      icon: BarChart3,
-      onClick: () => setCurrentView('monthly-data'),
-      active: currentView === 'monthly-data'
-    }
-  ];
+  const handleDeleteEmailTemplate = (templateId: string) => {
+    setEmailTemplates(prev => prev.filter(t => t.id !== templateId));
+    toast.success("Szablon został usunięty");
+  };
 
-  const communicationItems = [
-    {
-      title: "Chat Zespołowy",
-      icon: MessageSquare,
-      onClick: () => setCurrentView('chat'),
-      active: currentView === 'chat'
-    },
-    {
-      title: "Centrum Email",
-      icon: Mail,
-      onClick: () => setCurrentView('email'),
-      active: currentView === 'email'
-    },
-    {
-      title: "Kalendarz",
-      icon: CalendarDays,
-      onClick: () => setCurrentView('calendar'),
-      active: currentView === 'calendar'
-    }
-  ];
+  const handleSaveProfile = (updatedUser: Partial<User>) => {
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updatedUser } : u));
+    toast.success("Profil został zaktualizowany");
+  };
 
-  const businessItems = [
-    {
-      title: "Faktury",
-      icon: FileText,
-      onClick: () => setCurrentView('invoices'),
-      active: currentView === 'invoices'
-    },
-    {
-      title: "Automatyczne Faktury",
-      icon: Zap,
-      onClick: () => setCurrentView('auto-invoicing'),
-      active: currentView === 'auto-invoicing'
-    },
-    {
-      title: "Szablony Faktur",
-      icon: ScrollText,
-      onClick: () => setCurrentView('invoice-templates'),
-      active: currentView === 'invoice-templates'
-    },
-    {
-      title: "Integracja Bankowa",
-      icon: CreditCard,
-      onClick: () => setCurrentView('bank-integration'),
-      active: currentView === 'bank-integration'
-    },
-    {
-      title: "Zarządzanie Kontraktami",
-      icon: Building2,
-      onClick: () => setCurrentView('contracts'),
-      active: currentView === 'contracts'
-    }
-  ];
-
-  const organizationItems = [
-    {
-      title: "Czasomierz",
-      icon: Clock,
-      onClick: () => setCurrentView('time-tracker'),
-      active: currentView === 'time-tracker'
-    },
-    {
-      title: "Raport Czasu Pracy", 
-      icon: Timer,
-      onClick: () => setCurrentView('work-time-report'),
-      active: currentView === 'work-time-report'
-    },
-    {
-      title: "Zarządzanie Personelem",
-      icon: UserCog,
-      onClick: () => setCurrentView('users'),
-      active: currentView === 'users'
-    },
-    {
-      title: "Szablony Email",
-      icon: MailOpen,
-      onClick: () => setCurrentView('email-templates'),
-      active: currentView === 'email-templates'
-    }
-  ];
+  const renderContent = () => {
+    return renderRoute({
+      currentView,
+      currentUser,
+      clients,
+      selectedClient,
+      users,
+      emails,
+      emailTemplates,
+      onNavigate: setCurrentView,
+      onViewClient: handleViewClient,
+      onEditClient: handleEditClient,
+      onDeleteClient: handleDeleteClient,
+      onAddClient: handleAddClient,
+      onSaveClient: handleSaveClient,
+      onCancelForm: handleCancelForm,
+      onBackToClients: handleBackToClients,
+      onSendEmail: addEmail,
+      onUpdateEmail: updateEmail,
+      onDeleteEmail: deleteEmail,
+      onSaveEmailTemplate: handleSaveEmailTemplate,
+      onDeleteEmailTemplate: handleDeleteEmailTemplate,
+      onSaveProfile: handleSaveProfile
+    });
+  };
 
   return (
     <PermissionProvider>
@@ -562,107 +276,26 @@ export default function App() {
         <div className="flex h-screen w-full">
         <Sidebar>
           <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Zarządzanie Klientami</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {menuItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        onClick={item.onClick}
-                        isActive={item.active}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarGroup>
-              <SidebarGroupLabel>Komunikacja</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {communicationItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        onClick={item.onClick}
-                        isActive={item.active}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarGroup>
-              <SidebarGroupLabel>Biznes</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {businessItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        onClick={item.onClick}
-                        isActive={item.active}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarGroup>
-              <SidebarGroupLabel>Organizacja</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {organizationItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        onClick={item.onClick}
-                        isActive={item.active}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            
-            <SidebarGroup>
-              <SidebarGroupLabel>Ustawienia</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      onClick={() => setCurrentView('profile')}
-                      isActive={currentView === 'profile'}
-                    >
-                      <UserCog className="h-4 w-4" />
-                      <span>Mój Profil</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      onClick={() => setCurrentView('settings')}
-                      isActive={currentView === 'settings'}
-                    >
-                      <Settings className="h-4 w-4" />
-                      <span>Preferencje</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            {menuSections.map((section) => (
+              <SidebarGroup key={section.label}>
+                <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {section.items.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton 
+                          onClick={() => setCurrentView(item.view)}
+                          isActive={currentView === item.view}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
           </SidebarContent>
         </Sidebar>
 

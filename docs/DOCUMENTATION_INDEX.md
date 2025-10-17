@@ -169,6 +169,13 @@ Welcome! This document helps you find the right guide for your needs.
 - **Live demo:** https://pawel-sokolowski.github.io/ManagmentApp/
 - **Screenshots:** [README.md](README.md)
 
+### Fixes and Updates
+
+- **GitHub Pages Routing Fix:** [docs/fixes/GITHUB_PAGES_FIXES.md](fixes/GITHUB_PAGES_FIXES.md)
+- **PDF Form Fixes:** [docs/fixes/UPL1_PDF_FIX.md](fixes/UPL1_PDF_FIX.md)
+- **Library Improvements:** [docs/fixes/PDF_LIBRARY_IMPROVEMENT.md](fixes/PDF_LIBRARY_IMPROVEMENT.md)
+- **Archived Fixes:** [docs/archive/](archive/) - Historical fixes and summaries
+
 ---
 
 ## ❓ Common Questions
