@@ -57,14 +57,17 @@ pool.on('error', (err) => {
 app.use(securityHeaders);
 
 // CORS configuration
-app.use(cors({
+const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL || 'http://localhost:3000'] 
-    : true,
+    ? (process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : ['http://localhost:3000'])
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 
 // Logging
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -138,7 +141,7 @@ app.post('/api/db-query', strictLimiter, async (req, res) => {
 });
 
 // Database initialization endpoint
-app.post('/api/init-database', async (req, res) => {
+app.post('/api/init-database', strictLimiter, async (req, res) => {
   try {
     // Read and execute the complete schema
     const fs = require('fs');
@@ -165,7 +168,7 @@ app.post('/api/init-database', async (req, res) => {
 });
 
 // Database configuration check endpoint
-app.get('/api/db-status', async (req, res) => {
+app.get('/api/db-status', generalLimiter, async (req, res) => {
   try {
     // Check connection
     await pool.query('SELECT 1');

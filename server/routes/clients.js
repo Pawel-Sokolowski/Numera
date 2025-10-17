@@ -3,11 +3,26 @@ const router = express.Router();
 const { Pool } = require('pg');
 const rateLimit = require('express-rate-limit');
 
+// Rate limiter for read (GET) requests
+const readLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 read requests per windowMs
+  message: {
+    error: 'Too many requests from this IP, please try again later'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Rate limiter for update (PUT) requests
 const updateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // limit each IP to 10 update requests per windowMs
-  message: 'Too many update requests from this IP, please try again later'
+  message: {
+    error: 'Too many update requests from this IP, please try again later'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const pool = new Pool({
@@ -24,11 +39,13 @@ const deleteLimiter = rateLimit({
   max: 10, // limit each IP to 10 delete requests per windowMs
   message: {
     error: 'Too many delete requests from this IP, please try again later'
-  }
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Get all clients
-router.get('/', async (req, res) => {
+router.get('/', readLimiter, async (req, res) => {
   try {
     const query = `
       SELECT 
@@ -72,7 +89,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get single client
-router.get('/:id', async (req, res) => {
+router.get('/:id', readLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const query = `
@@ -120,7 +137,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new client
-router.post('/', async (req, res) => {
+router.post('/', updateLimiter, async (req, res) => {
   try {
     const {
       companyName,
