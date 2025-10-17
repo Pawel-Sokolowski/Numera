@@ -1,5 +1,7 @@
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const xss = require('xss');
+const validator = require('validator');
 
 // Rate limiting configurations
 const authLimiter = rateLimit({
@@ -65,25 +67,26 @@ const securityHeaders = helmet({
 
 // Input sanitization middleware
 const sanitizeInput = (req, res, next) => {
-  // More robust HTML/XSS sanitization
+  // Use xss library for robust HTML/XSS sanitization
   const sanitizeString = (str) => {
     if (typeof str !== 'string') return str;
-    // Remove HTML tags, script tags, and other potentially dangerous content
-    return str
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '') // Remove iframe tags
-      .replace(/javascript:/gi, '') // Remove javascript: protocol
-      .replace(/on\w+\s*=/gi, '') // Remove inline event handlers
-      .replace(/[<>'"]/g, (char) => {
-        // Escape remaining special chars
-        const entities = {
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#x27;',
-        };
-        return entities[char] || char;
-      });
+
+    // Check for dangerous URL schemes using validator
+    if (
+      str.startsWith('javascript:') ||
+      str.startsWith('data:') ||
+      str.startsWith('vbscript:') ||
+      str.startsWith('file:')
+    ) {
+      return '';
+    }
+
+    // Use xss library for proper HTML sanitization
+    return xss(str, {
+      whiteList: {}, // Remove all HTML tags
+      stripIgnoreTag: true,
+      stripIgnoreTagBody: ['script', 'style'],
+    });
   };
 
   const sanitizeObject = (obj) => {

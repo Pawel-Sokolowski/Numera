@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const rateLimit = require('express-rate-limit');
+const slowDown = require('express-slow-down');
 const { validateInput, sanitizeInput, validateRequest } = require('../utils/validation');
 
 // Use the same pool configuration as main server
@@ -20,7 +21,7 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 login attempts per windowMs
   message: {
-    error: 'Too many login attempts from this IP, please try again later.'
+    error: 'Too many login attempts from this IP, please try again later.',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -31,10 +32,29 @@ const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // limit each IP to 3 registration attempts per hour
   message: {
-    error: 'Too many registration attempts from this IP, please try again later.'
+    error: 'Too many registration attempts from this IP, please try again later.',
   },
   standardHeaders: true,
   legacyHeaders: false,
+});
+
+// Strict rate limiter for password reset requests
+const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // limit each IP to 3 password reset requests per hour
+  message: {
+    error: 'Too many password reset attempts from this IP, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Progressive delay for failed password reset attempts
+const passwordResetSpeedLimiter = slowDown({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  delayAfter: 1, // Allow 1 request per 15 minutes at full speed
+  delayMs: (hits) => hits * 1000, // Add 1 second delay per request after the first
+  maxDelayMs: 10000, // Maximum delay of 10 seconds
 });
 
 // Login validation schema
@@ -42,13 +62,13 @@ const loginSchema = {
   email: {
     required: true,
     validator: validateInput.email,
-    maxLength: 255
+    maxLength: 255,
   },
   password: {
     required: true,
     validator: validateInput.password,
-    maxLength: 128
-  }
+    maxLength: 128,
+  },
 };
 
 // Login endpoint
@@ -84,17 +104,12 @@ router.post('/login', loginLimiter, validateRequest(loginSchema), async (req, re
       return res.status(500).json({ error: 'Authentication configuration error' });
     }
 
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      jwtSecret,
-      { expiresIn: '24h' }
-    );
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, jwtSecret, {
+      expiresIn: '24h',
+    });
 
     // Update last login
-    await pool.query(
-      'UPDATE users SET last_login = NOW() WHERE id = $1',
-      [user.id]
-    );
+    await pool.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
 
     res.json({
       token,
@@ -104,8 +119,8 @@ router.post('/login', loginLimiter, validateRequest(loginSchema), async (req, re
         lastName: user.last_name,
         email: user.email,
         role: user.role,
-        avatar: user.avatar_url
-      }
+        avatar: user.avatar_url,
+      },
     });
   } catch (error) {
     console.error('Login error:', error.message);
@@ -139,7 +154,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       lastName,
       email,
       hashedPassword,
-      role
+      role,
     ]);
 
     const user = result.rows[0];
@@ -151,8 +166,8 @@ router.post('/register', registerLimiter, async (req, res) => {
         firstName: user.first_name,
         lastName: user.last_name,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -163,7 +178,7 @@ router.post('/register', registerLimiter, async (req, res) => {
 // Verify token middleware
 const verifyToken = (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
-  
+
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
   }
@@ -192,7 +207,7 @@ router.get('/me', verifyToken, async (req, res) => {
   try {
     const userQuery = 'SELECT * FROM users WHERE id = $1';
     const result = await pool.query(userQuery, [req.user.userId]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -206,12 +221,86 @@ router.get('/me', verifyToken, async (req, res) => {
       role: user.role,
       avatar: user.avatar_url,
       phone: user.phone,
-      position: user.position
+      position: user.position,
     });
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Failed to get user data' });
   }
 });
+
+// Request password reset endpoint with strict rate limiting
+router.post(
+  '/forgot-password',
+  passwordResetLimiter,
+  passwordResetSpeedLimiter,
+  async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+
+      // Sanitize email
+      const sanitizedEmail = email.toLowerCase().trim();
+
+      // Check if user exists (don't reveal if email exists for security)
+      const userQuery = 'SELECT id, email FROM users WHERE email = $1 AND is_active = true';
+      const userResult = await pool.query(userQuery, [sanitizedEmail]);
+
+      // Always return success to prevent email enumeration
+      // In production, you would send an email with a reset token here
+      res.json({
+        message: 'If an account exists with this email, a password reset link has been sent.',
+      });
+
+      // Only log internally if user was found (don't expose to client)
+      if (userResult.rows.length > 0) {
+        console.log(`Password reset requested for user: ${sanitizedEmail}`);
+        // TODO: Implement email sending and token generation
+      }
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      res.status(500).json({ error: 'Failed to process password reset request' });
+    }
+  }
+);
+
+// Reset password endpoint with strict rate limiting
+router.post(
+  '/reset-password',
+  passwordResetLimiter,
+  passwordResetSpeedLimiter,
+  async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        return res.status(400).json({ error: 'Token and new password are required' });
+      }
+
+      // Validate password strength
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+      }
+
+      // In production, verify the token (stored in database with expiration)
+      // For now, this is a placeholder implementation
+      res.status(501).json({
+        error: 'Password reset functionality not fully implemented. Please contact administrator.',
+      });
+
+      // TODO: Implement token verification and password reset
+      // 1. Verify token exists and is not expired
+      // 2. Hash new password
+      // 3. Update user password
+      // 4. Invalidate token
+    } catch (error) {
+      console.error('Reset password error:', error);
+      res.status(500).json({ error: 'Failed to reset password' });
+    }
+  }
+);
 
 module.exports = router;
