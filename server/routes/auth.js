@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
+const rateLimit = require('express-rate-limit');
 const { validateInput, sanitizeInput, validateRequest } = require('../utils/validation');
 
 // Use the same pool configuration as main server
@@ -12,6 +13,28 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'office_management',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
+});
+
+// Rate limiter for login attempts (stricter)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 login attempts per windowMs
+  message: {
+    error: 'Too many login attempts from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiter for registration (moderate)
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // limit each IP to 3 registration attempts per hour
+  message: {
+    error: 'Too many registration attempts from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Login validation schema
@@ -29,7 +52,7 @@ const loginSchema = {
 };
 
 // Login endpoint
-router.post('/login', validateRequest(loginSchema), async (req, res) => {
+router.post('/login', loginLimiter, validateRequest(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -91,7 +114,7 @@ router.post('/login', validateRequest(loginSchema), async (req, res) => {
 });
 
 // Register endpoint (for admin users)
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   try {
     const { firstName, lastName, email, password, role = 'ksiegowa' } = req.body;
 
