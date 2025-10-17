@@ -1,5 +1,28 @@
 import { z } from 'zod';
 
+// Custom URL validator that's more secure than validator.isURL
+const secureUrlValidation = (url: string) => {
+  try {
+    const urlObj = new URL(url);
+    // Only allow http/https protocols
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return false;
+    }
+    // Reject malicious patterns
+    if (
+      url.includes('<') ||
+      url.includes('>') ||
+      url.includes('javascript:') ||
+      url.includes('data:')
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 // Client validation schemas
 export const clientSchema = z.object({
   id: z.string().optional(),
@@ -51,8 +74,8 @@ export const invoiceSchema = z.object({
 
 // Environment variable validation
 export const envSchema = z.object({
-  VITE_API_URL: z.string().url().optional(),
-  VITE_WS_URL: z.string().url().optional(),
+  VITE_API_URL: z.string().refine(secureUrlValidation, 'Invalid API URL').optional(),
+  VITE_WS_URL: z.string().refine(secureUrlValidation, 'Invalid WebSocket URL').optional(),
 });
 
 export type ClientInput = z.infer<typeof clientSchema>;

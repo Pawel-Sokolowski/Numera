@@ -34,6 +34,7 @@ export default [
         localStorage: 'readonly',
         React: 'readonly',
         JSX: 'readonly',
+        URL: 'readonly',
       },
     },
     settings: {
