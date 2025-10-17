@@ -1,0 +1,10 @@
+node_modules
+build
+dist
+.git
+.cache
+coverage
+*.log
+package-lock.json
+PDFFile
+public/pdf-templates

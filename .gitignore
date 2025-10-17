@@ -50,3 +50,14 @@ tmp/
 temp/test-output-*.pdf
 test-output*.pdf
 test-logs-*.txt
+
+# Test coverage
+coverage/
+.nyc_output
+
+# Test results
+playwright-report/
+test-results/
+
+# Husky
+.husky/_
