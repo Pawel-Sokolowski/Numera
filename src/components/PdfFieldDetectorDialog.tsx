@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { PdfFieldDetector, FieldDetectionResult, DetectedField } from '../utils/pdfFieldDetector';
-import { Loader2, Upload, Download, Eye, Edit2, Check, X } from 'lucide-react';
+import { Loader2, Download, Eye, Edit2, Check, X } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { cn } from '../lib/utils';
 
@@ -14,6 +21,7 @@ interface PdfFieldDetectorDialogProps {
 }
 
 export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorDialogProps) {
+  // eslint-disable-next-line no-undef
   const [file, setFile] = useState<File | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectionResult, setDetectionResult] = useState<FieldDetectionResult | null>(null);
@@ -23,6 +31,7 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editedFields, setEditedFields] = useState<Record<string, DetectedField>>({});
 
+  // eslint-disable-next-line no-undef
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && selectedFile.type === 'application/pdf') {
@@ -52,16 +61,15 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
       const arrayBuffer = await file.arrayBuffer();
       const detector = new PdfFieldDetector();
       const result = await detector.detectFields(arrayBuffer);
-      
+
       setDetectionResult(result);
-      
+
       // Initialize edited fields with detected fields
       const fieldsMap: Record<string, DetectedField> = {};
-      result.fields.forEach(field => {
+      result.fields.forEach((field) => {
         fieldsMap[field.name] = { ...field };
       });
       setEditedFields(fieldsMap);
-      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to detect fields');
       console.error('Detection error:', err);
@@ -70,18 +78,19 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFieldEdit = (fieldName: string, property: keyof DetectedField, value: any) => {
-    setEditedFields(prev => ({
+    setEditedFields((prev) => ({
       ...prev,
       [fieldName]: {
         ...prev[fieldName],
-        [property]: value
-      }
+        [property]: value,
+      },
     }));
   };
 
   const handleDeleteField = (fieldName: string) => {
-    setEditedFields(prev => {
+    setEditedFields((prev) => {
       const newFields = { ...prev };
       delete newFields[fieldName];
       return newFields;
@@ -92,15 +101,15 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
     if (!detectionResult) return;
 
     const detector = new PdfFieldDetector();
-    
+
     // Use edited fields instead of original detection result
     const modifiedResult = {
       ...detectionResult,
-      fields: Object.values(editedFields)
+      fields: Object.values(editedFields),
     };
-    
+
     const mapping = detector.generateMapping(modifiedResult, formVersion);
-    
+
     const blob = new Blob([JSON.stringify(mapping, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -145,9 +154,7 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
                 disabled={isDetecting}
               />
               {file && (
-                <span className="text-sm text-muted-foreground flex items-center">
-                  {file.name}
-                </span>
+                <span className="text-sm text-muted-foreground flex items-center">{file.name}</span>
               )}
             </div>
           </div>
@@ -178,9 +185,7 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
 
           {/* Error Display */}
           {error && (
-            <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">
-              {error}
-            </div>
+            <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">{error}</div>
           )}
 
           {/* Detect Button */}
@@ -240,7 +245,9 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
                               />
                               <Input
                                 value={field.label}
-                                onChange={(e) => handleFieldEdit(fieldName, 'label', e.target.value)}
+                                onChange={(e) =>
+                                  handleFieldEdit(fieldName, 'label', e.target.value)
+                                }
                                 placeholder="Field label"
                                 className="h-8"
                               />
@@ -248,28 +255,36 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
                                 <Input
                                   type="number"
                                   value={field.x}
-                                  onChange={(e) => handleFieldEdit(fieldName, 'x', parseInt(e.target.value))}
+                                  onChange={(e) =>
+                                    handleFieldEdit(fieldName, 'x', parseInt(e.target.value))
+                                  }
                                   placeholder="X"
                                   className="h-8"
                                 />
                                 <Input
                                   type="number"
                                   value={field.y}
-                                  onChange={(e) => handleFieldEdit(fieldName, 'y', parseInt(e.target.value))}
+                                  onChange={(e) =>
+                                    handleFieldEdit(fieldName, 'y', parseInt(e.target.value))
+                                  }
                                   placeholder="Y"
                                   className="h-8"
                                 />
                                 <Input
                                   type="number"
                                   value={field.width}
-                                  onChange={(e) => handleFieldEdit(fieldName, 'width', parseInt(e.target.value))}
+                                  onChange={(e) =>
+                                    handleFieldEdit(fieldName, 'width', parseInt(e.target.value))
+                                  }
                                   placeholder="Width"
                                   className="h-8"
                                 />
                                 <Input
                                   type="number"
                                   value={field.height}
-                                  onChange={(e) => handleFieldEdit(fieldName, 'height', parseInt(e.target.value))}
+                                  onChange={(e) =>
+                                    handleFieldEdit(fieldName, 'height', parseInt(e.target.value))
+                                  }
                                   placeholder="Height"
                                   className="h-8"
                                 />
@@ -280,32 +295,55 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
                               <div className="flex items-center gap-2">
                                 <span className="font-mono text-sm font-medium">{field.name}</span>
                                 {field.label && (
-                                  <span className="text-sm text-muted-foreground">- {field.label}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    - {field.label}
+                                  </span>
                                 )}
-                                <span className={cn(
-                                  "text-xs px-2 py-0.5 rounded",
-                                  field.type === 'text' && "bg-blue-100 text-blue-700",
-                                  field.type === 'checkbox' && "bg-green-100 text-green-700",
-                                  field.type === 'signature' && "bg-purple-100 text-purple-700"
-                                )}>
+                                <span
+                                  className={cn(
+                                    'text-xs px-2 py-0.5 rounded',
+                                    field.type === 'text' && 'bg-blue-100 text-blue-700',
+                                    field.type === 'checkbox' && 'bg-green-100 text-green-700',
+                                    field.type === 'signature' && 'bg-purple-100 text-purple-700'
+                                  )}
+                                >
                                   {field.type}
                                 </span>
                               </div>
                               <div className="text-xs text-muted-foreground font-mono">
-                                Page {field.page} | x: {field.x}, y: {field.y} | 
-                                {field.width}×{field.height} | 
-                                Confidence: {(field.confidence * 100).toFixed(0)}%
+                                Page {field.page} | x: {field.x}, y: {field.y} |{field.width}×
+                                {field.height}
                               </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span
+                                  className={cn(
+                                    'px-2 py-0.5 rounded font-medium',
+                                    field.confidence >= 0.8 && 'bg-green-100 text-green-700',
+                                    field.confidence >= 0.6 &&
+                                      field.confidence < 0.8 &&
+                                      'bg-yellow-100 text-yellow-700',
+                                    field.confidence < 0.6 && 'bg-red-100 text-red-700'
+                                  )}
+                                >
+                                  Confidence: {(field.confidence * 100).toFixed(0)}%
+                                </span>
+                                {field.matchStrategy && (
+                                  <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+                                    {field.matchStrategy}
+                                  </span>
+                                )}
+                              </div>
+                              {field.warnings && field.warnings.length > 0 && (
+                                <div className="text-xs text-orange-600 mt-1">
+                                  ⚠️ {field.warnings.join('; ')}
+                                </div>
+                              )}
                             </>
                           )}
                         </div>
                         <div className="flex gap-1">
                           {editingField === fieldName ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setEditingField(null)}
-                            >
+                            <Button size="sm" variant="ghost" onClick={() => setEditingField(null)}>
                               <Check className="h-4 w-4" />
                             </Button>
                           ) : (
@@ -332,12 +370,55 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
               </ScrollArea>
 
               {/* Summary */}
-              <div className="p-3 bg-muted rounded-md text-sm">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>Pages: {detectionResult.pageCount}</div>
-                  <div>Fields: {Object.keys(editedFields).length}</div>
-                  <div>Page Size: {detectionResult.pageSize.width} × {detectionResult.pageSize.height}</div>
-                  <div>Rectangles: {detectionResult.rectangles.length}</div>
+              <div className="space-y-2">
+                <div className="p-3 bg-muted rounded-md text-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>Pages: {detectionResult.pageCount}</div>
+                    <div>Fields: {Object.keys(editedFields).length}</div>
+                    <div>
+                      Page Size: {detectionResult.pageSize.width} ×{' '}
+                      {detectionResult.pageSize.height}
+                    </div>
+                    <div>Rectangles: {detectionResult.rectangles.length}</div>
+                  </div>
+                </div>
+
+                {/* Detection Quality Summary */}
+                <div className="p-3 border rounded-md text-sm space-y-2">
+                  <div className="font-semibold">Detection Quality</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {Object.values(editedFields).filter((f) => f.confidence >= 0.8).length}
+                      </div>
+                      <div className="text-xs text-muted-foreground">High (≥80%)</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-yellow-600">
+                        {
+                          Object.values(editedFields).filter(
+                            (f) => f.confidence >= 0.6 && f.confidence < 0.8
+                          ).length
+                        }
+                      </div>
+                      <div className="text-xs text-muted-foreground">Medium (60-79%)</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-red-600">
+                        {Object.values(editedFields).filter((f) => f.confidence < 0.6).length}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Low (&lt;60%)</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Average:{' '}
+                    {(
+                      (Object.values(editedFields).reduce((sum, f) => sum + f.confidence, 0) /
+                        Math.max(Object.keys(editedFields).length, 1)) *
+                      100
+                    ).toFixed(1)}
+                    %
+                  </div>
                 </div>
               </div>
             </div>
