@@ -6,7 +6,7 @@ import { FileSearch, Upload, Download, Eye } from 'lucide-react';
 
 /**
  * Example component demonstrating how to use the PDF Field Detection system
- * 
+ *
  * This component can be integrated into the admin panel or settings page
  * to allow users to automatically detect and configure form fields.
  */
@@ -30,15 +30,10 @@ export function FormFieldDetectorExample() {
               <FileSearch className="h-5 w-5" />
               Detect Fields
             </CardTitle>
-            <CardDescription>
-              Automatically detect form fields using OCR
-            </CardDescription>
+            <CardDescription>Automatically detect form fields using OCR</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              className="w-full" 
-              onClick={() => setDetectorOpen(true)}
-            >
+            <Button className="w-full" onClick={() => setDetectorOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Open Field Detector
             </Button>
@@ -52,15 +47,13 @@ export function FormFieldDetectorExample() {
               <Eye className="h-5 w-5" />
               Features
             </CardTitle>
-            <CardDescription>
-              What the detection system can do
-            </CardDescription>
+            <CardDescription>What the detection system can do</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm">
               <li className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>
-                <span>Detect rectangles and boxes</span>
+                <span>Enhanced rectangle detection (filters decorative lines)</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>
@@ -68,11 +61,23 @@ export function FormFieldDetectorExample() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>
-                <span>Smart field matching</span>
+                <span>Multi-strategy field matching (above, left, inside, tables)</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>
-                <span>Visual editor</span>
+                <span>Form structure analysis (tables, sections, grids)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-500">✓</span>
+                <span>Polish field recognition (PESEL, NIP, województwo, etc.)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-500">✓</span>
+                <span>Confidence scoring and warnings</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-500">✓</span>
+                <span>Visual editor with quality indicators</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>
@@ -89,9 +94,7 @@ export function FormFieldDetectorExample() {
               <Download className="h-5 w-5" />
               Supported Forms
             </CardTitle>
-            <CardDescription>
-              Works with all Polish tax forms
-            </CardDescription>
+            <CardDescription>Works with all Polish tax forms</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
@@ -118,9 +121,7 @@ export function FormFieldDetectorExample() {
       <Card>
         <CardHeader>
           <CardTitle>How It Works</CardTitle>
-          <CardDescription>
-            The automated field detection process in 5 steps
-          </CardDescription>
+          <CardDescription>The automated field detection process in 5 steps</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -223,10 +224,7 @@ export function FormFieldDetectorExample() {
       </Card>
 
       {/* Field Detector Dialog */}
-      <PdfFieldDetectorDialog 
-        open={detectorOpen}
-        onOpenChange={setDetectorOpen}
-      />
+      <PdfFieldDetectorDialog open={detectorOpen} onOpenChange={setDetectorOpen} />
     </div>
   );
 }

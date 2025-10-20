@@ -23,6 +23,8 @@ export interface DetectedField {
   page: number; // Page number (1-based)
   confidence: number; // Detection confidence (0-1)
   type: 'text' | 'checkbox' | 'signature'; // Field type
+  matchStrategy?: 'above' | 'left' | 'inside' | 'nearby' | 'none'; // How label was matched
+  warnings?: string[]; // Warnings about detection quality
 }
 
 export interface DetectedRectangle {
@@ -31,6 +33,10 @@ export interface DetectedRectangle {
   width: number;
   height: number;
   page: number;
+  isFieldCandidate?: boolean; // Whether this looks like an actual input field
+  area?: number; // Calculated area
+  aspectRatio?: number; // Width/height ratio
+  edgeDensity?: number; // Density of edges (helps distinguish decorative from fields)
 }
 
 export interface DetectedText {
@@ -42,12 +48,39 @@ export interface DetectedText {
   confidence: number;
 }
 
+export interface FormStructure {
+  tables: TableStructure[];
+  sections: SectionStructure[];
+  hasGrid: boolean;
+  fieldDensity: number; // Fields per square unit
+}
+
+export interface TableStructure {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rows: number;
+  columns: number;
+  cells: DetectedRectangle[];
+}
+
+export interface SectionStructure {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  title?: string;
+  fields: DetectedRectangle[];
+}
+
 export interface FieldDetectionResult {
   fields: DetectedField[];
   rectangles: DetectedRectangle[];
   texts: DetectedText[];
   pageCount: number;
   pageSize: { width: number; height: number };
+  structure?: FormStructure;
 }
 
 export class PdfFieldDetector {
@@ -107,10 +140,22 @@ export class PdfFieldDetector {
         const texts = await this.detectTextWithOCR(canvas, pageNum);
         allTexts.push(...texts);
 
+        // Analyze form structure for better context
+        const structure = this.analyzeFormStructure(rectangles, texts, pageSize);
+
         // Match texts to rectangles to identify fields
-        const fields = this.matchTextToRectangles(texts, rectangles, pageNum, pageSize.height);
+        const fields = this.matchTextToRectangles(
+          texts,
+          rectangles,
+          pageNum,
+          pageSize.height,
+          structure
+        );
         allFields.push(...fields);
       }
+
+      // Analyze overall form structure across all pages
+      const overallStructure = this.analyzeFormStructure(allRectangles, allTexts, pageSize);
 
       return {
         fields: allFields,
@@ -118,6 +163,7 @@ export class PdfFieldDetector {
         texts: allTexts,
         pageCount,
         pageSize,
+        structure: overallStructure,
       };
     } catch (error) {
       console.error('Error detecting PDF fields:', error);
@@ -276,6 +322,7 @@ export class PdfFieldDetector {
 
   /**
    * Find rectangles from edge data with improved heuristics
+   * Enhanced to better distinguish actual input fields from decorative lines
    */
   private findRectangles(
     edges: Uint8ClampedArray,
@@ -321,6 +368,8 @@ export class PdfFieldDetector {
 
           // Validate rectangle dimensions and aspect ratio
           const aspectRatio = rectWidth / rectHeight;
+          const area = rectWidth * rectHeight;
+
           const isValidField =
             rectWidth >= minWidth &&
             rectWidth <= maxWidth &&
@@ -340,12 +389,34 @@ export class PdfFieldDetector {
             );
 
             if (!overlaps) {
+              // Calculate edge density to help distinguish fields from decorative boxes
+              const edgeDensity = this.calculateEdgeDensity(
+                edges,
+                width,
+                x,
+                y,
+                rectWidth,
+                rectHeight
+              );
+
+              // Determine if this is likely a field candidate vs decorative box
+              const isFieldCandidate = this.isLikelyInputField(
+                rectWidth,
+                rectHeight,
+                aspectRatio,
+                edgeDensity
+              );
+
               rectangles.push({
                 x,
                 y,
                 width: rectWidth,
                 height: rectHeight,
                 page: 1, // Will be set by caller
+                area,
+                aspectRatio,
+                edgeDensity,
+                isFieldCandidate,
               });
             }
           }
@@ -355,6 +426,80 @@ export class PdfFieldDetector {
 
     // Post-processing: merge nearby rectangles that likely belong to the same field
     return this.mergeNearbyRectangles(rectangles);
+  }
+
+  /**
+   * Calculate edge density within a rectangle to help distinguish actual fields from decorative boxes
+   * Input fields typically have cleaner edges (lower density inside, higher density on borders)
+   */
+  private calculateEdgeDensity(
+    edges: Uint8ClampedArray,
+    width: number,
+    x: number,
+    y: number,
+    rectWidth: number,
+    rectHeight: number
+  ): number {
+    let edgePixels = 0;
+    let totalPixels = 0;
+
+    // Sample the interior of the rectangle (skip borders)
+    const margin = 2;
+    for (let dy = margin; dy < rectHeight - margin; dy++) {
+      for (let dx = margin; dx < rectWidth - margin; dx++) {
+        const px = x + dx;
+        const py = y + dy;
+        if (px >= 0 && px < width && py >= 0 && py < edges.length / width) {
+          totalPixels++;
+          if (edges[py * width + px] > 128) {
+            edgePixels++;
+          }
+        }
+      }
+    }
+
+    return totalPixels > 0 ? edgePixels / totalPixels : 0;
+  }
+
+  /**
+   * Determine if a rectangle is likely an actual input field vs decorative element
+   * Uses multiple heuristics to filter out decorative lines and focus on input boxes
+   */
+  private isLikelyInputField(
+    width: number,
+    height: number,
+    aspectRatio: number,
+    edgeDensity: number
+  ): boolean {
+    const area = width * height;
+
+    // Very small boxes are likely checkboxes or decorative - keep them as candidates
+    if (width < 35 && height < 35) {
+      return aspectRatio > 0.6 && aspectRatio < 1.6; // Square-ish for checkboxes
+    }
+
+    // Very thin rectangles are likely decorative lines
+    if (height < 10 || width < 30) {
+      return false;
+    }
+
+    // Very large boxes might be decorative borders, but could also be large text areas
+    // Keep them if they have reasonable aspect ratio
+    if (area > 15000) {
+      return aspectRatio < 15; // Not extremely wide
+    }
+
+    // Interior edge density check - input fields should have clean interiors
+    // High edge density inside suggests decorative patterns or filled areas
+    if (edgeDensity > 0.3) {
+      return false; // Too much noise inside
+    }
+
+    // Standard fields - use reasonable dimensions and aspect ratio
+    const isGoodSize = area >= 600 && area <= 10000;
+    const isGoodRatio = aspectRatio >= 0.8 && aspectRatio <= 40;
+
+    return isGoodSize && isGoodRatio;
   }
 
   /**
@@ -660,21 +805,281 @@ export class PdfFieldDetector {
   }
 
   /**
+   * Analyze form structure to detect tables, sections, and patterns
+   * This helps improve field matching by understanding the layout context
+   */
+  private analyzeFormStructure(
+    rectangles: DetectedRectangle[],
+    texts: DetectedText[],
+    pageSize: { width: number; height: number }
+  ): FormStructure {
+    const tables = this.detectTables(rectangles);
+    const sections = this.detectSections(rectangles, texts, pageSize);
+    const hasGrid = this.detectGridPattern(rectangles);
+    const fieldDensity = rectangles.length / ((pageSize.width * pageSize.height) / 10000);
+
+    return {
+      tables,
+      sections,
+      hasGrid,
+      fieldDensity,
+    };
+  }
+
+  /**
+   * Detect table structures in the form
+   * Tables are identified by aligned rectangles in rows and columns
+   */
+  private detectTables(rectangles: DetectedRectangle[]): TableStructure[] {
+    const tables: TableStructure[] = [];
+    const alignmentThreshold = 10; // pixels
+
+    // Group rectangles by vertical position (rows)
+    const rows = this.groupByAlignment(rectangles, 'y', alignmentThreshold);
+
+    // For each row group, check if it forms part of a table
+    for (let i = 0; i < rows.length; i++) {
+      const currentRow = rows[i];
+      if (currentRow.length < 2) continue; // Need at least 2 fields for a table
+
+      // Look for adjacent rows with similar structure
+      const tableRows: DetectedRectangle[][] = [currentRow];
+      for (let j = i + 1; j < rows.length; j++) {
+        const nextRow = rows[j];
+
+        // Check if rows are aligned horizontally and have similar field count
+        if (
+          Math.abs(currentRow.length - nextRow.length) <= 1 &&
+          this.rowsAreAligned(currentRow, nextRow, alignmentThreshold)
+        ) {
+          tableRows.push(nextRow);
+        } else {
+          break;
+        }
+      }
+
+      // If we found multiple rows that form a table
+      if (tableRows.length >= 2) {
+        const allCells = tableRows.flat();
+        const minX = Math.min(...allCells.map((r) => r.x));
+        const minY = Math.min(...allCells.map((r) => r.y));
+        const maxX = Math.max(...allCells.map((r) => r.x + r.width));
+        const maxY = Math.max(...allCells.map((r) => r.y + r.height));
+
+        tables.push({
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+          rows: tableRows.length,
+          columns: Math.max(...tableRows.map((row) => row.length)),
+          cells: allCells,
+        });
+
+        i += tableRows.length - 1; // Skip rows we've already processed
+      }
+    }
+
+    return tables;
+  }
+
+  /**
+   * Detect form sections (groups of related fields)
+   */
+  private detectSections(
+    rectangles: DetectedRectangle[],
+    texts: DetectedText[],
+    _pageSize: { width: number; height: number }
+  ): SectionStructure[] {
+    const sections: SectionStructure[] = [];
+    const sectionGap = 40; // Minimum gap between sections
+
+    // Sort rectangles by Y position
+    const sortedRects = [...rectangles].sort((a, b) => a.y - b.y);
+
+    let currentSection: DetectedRectangle[] = [];
+    let lastY = -1;
+
+    for (const rect of sortedRects) {
+      // Check if this starts a new section (large gap)
+      if (lastY >= 0 && rect.y - lastY > sectionGap) {
+        if (currentSection.length > 0) {
+          const minX = Math.min(...currentSection.map((r) => r.x));
+          const minY = Math.min(...currentSection.map((r) => r.y));
+          const maxX = Math.max(...currentSection.map((r) => r.x + r.width));
+          const maxY = Math.max(...currentSection.map((r) => r.y + r.height));
+
+          // Look for section title (text above the section)
+          const title = this.findSectionTitle(texts, minX, minY, maxX);
+
+          sections.push({
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+            title,
+            fields: currentSection,
+          });
+
+          currentSection = [];
+        }
+      }
+
+      currentSection.push(rect);
+      lastY = rect.y + rect.height;
+    }
+
+    // Add final section
+    if (currentSection.length > 0) {
+      const minX = Math.min(...currentSection.map((r) => r.x));
+      const minY = Math.min(...currentSection.map((r) => r.y));
+      const maxX = Math.max(...currentSection.map((r) => r.x + r.width));
+      const maxY = Math.max(...currentSection.map((r) => r.y + r.height));
+
+      const title = this.findSectionTitle(texts, minX, minY, maxX);
+
+      sections.push({
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY,
+        title,
+        fields: currentSection,
+      });
+    }
+
+    return sections;
+  }
+
+  /**
+   * Find section title (heading text above a section)
+   */
+  private findSectionTitle(
+    texts: DetectedText[],
+    sectionX: number,
+    sectionY: number,
+    sectionMaxX: number
+  ): string | undefined {
+    const titleCandidates = texts.filter((text) => {
+      return (
+        text.y < sectionY &&
+        text.y > sectionY - 40 &&
+        text.x >= sectionX - 20 &&
+        text.x <= sectionMaxX + 20
+      );
+    });
+
+    if (titleCandidates.length === 0) return undefined;
+
+    // Return the text closest to the section
+    const closest = titleCandidates.reduce((prev, current) =>
+      Math.abs(current.y - sectionY) < Math.abs(prev.y - sectionY) ? current : prev
+    );
+
+    return closest.text;
+  }
+
+  /**
+   * Detect grid pattern in the form layout
+   */
+  private detectGridPattern(rectangles: DetectedRectangle[]): boolean {
+    if (rectangles.length < 4) return false;
+
+    const alignmentThreshold = 10;
+
+    // Count rectangles that are aligned horizontally and vertically
+    const horizontalGroups = this.groupByAlignment(rectangles, 'y', alignmentThreshold);
+    const verticalGroups = this.groupByAlignment(rectangles, 'x', alignmentThreshold);
+
+    // A grid has multiple rows and columns
+    return horizontalGroups.length >= 2 && verticalGroups.length >= 2;
+  }
+
+  /**
+   * Group rectangles by alignment (horizontal or vertical)
+   */
+  private groupByAlignment(
+    rectangles: DetectedRectangle[],
+    axis: 'x' | 'y',
+    threshold: number
+  ): DetectedRectangle[][] {
+    const groups: DetectedRectangle[][] = [];
+    const sorted = [...rectangles].sort((a, b) => a[axis] - b[axis]);
+
+    let currentGroup: DetectedRectangle[] = [];
+    let currentValue = -1;
+
+    for (const rect of sorted) {
+      const value = rect[axis];
+
+      if (currentValue < 0 || Math.abs(value - currentValue) <= threshold) {
+        currentGroup.push(rect);
+        currentValue = value;
+      } else {
+        if (currentGroup.length > 0) {
+          groups.push(currentGroup);
+        }
+        currentGroup = [rect];
+        currentValue = value;
+      }
+    }
+
+    if (currentGroup.length > 0) {
+      groups.push(currentGroup);
+    }
+
+    return groups;
+  }
+
+  /**
+   * Check if two rows of rectangles are aligned (same column structure)
+   */
+  private rowsAreAligned(
+    row1: DetectedRectangle[],
+    row2: DetectedRectangle[],
+    threshold: number
+  ): boolean {
+    if (row1.length !== row2.length) return false;
+
+    // Sort by x position
+    const sorted1 = [...row1].sort((a, b) => a.x - b.x);
+    const sorted2 = [...row2].sort((a, b) => a.x - b.x);
+
+    // Check if x positions are aligned
+    for (let i = 0; i < sorted1.length; i++) {
+      if (Math.abs(sorted1[i].x - sorted2[i].x) > threshold) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
    * Match detected text to rectangles to identify form fields with enhanced spatial reasoning
+   * Implements multiple matching strategies: above, left, inside, and nearby
    */
   private matchTextToRectangles(
     texts: DetectedText[],
     rectangles: DetectedRectangle[],
     pageNum: number,
-    pageHeight: number
+    pageHeight: number,
+    structure?: FormStructure
   ): DetectedField[] {
     const fields: DetectedField[] = [];
     const maxDistance = 150; // Increased maximum distance for better matching
     const matched = new Set<string>(); // Track matched rectangles
 
-    for (const rect of rectangles) {
+    // Filter rectangles to prefer field candidates
+    const sortedRectangles = rectangles.sort((a, b) => {
+      const scoreA = (a.isFieldCandidate ? 1 : 0) + (a.area || 0) / 10000;
+      const scoreB = (b.isFieldCandidate ? 1 : 0) + (b.area || 0) / 10000;
+      return scoreB - scoreA;
+    });
+
+    for (const rect of sortedRectangles) {
       // Look for text near this rectangle with improved spatial reasoning
-      let bestMatch: { text: DetectedText; score: number } | null = null;
+      let bestMatch: { text: DetectedText; score: number; strategy: string } | null = null;
 
       for (const text of texts) {
         if (text.confidence < 0.4) continue; // Filter very low confidence
@@ -684,37 +1089,21 @@ export class PdfFieldDetector {
 
         if (distance > maxDistance) continue;
 
-        // Enhanced spatial analysis
-        const isAbove = text.y < rect.y && text.y > rect.y - maxDistance;
-        const isLeft =
-          text.x < rect.x && text.x > rect.x - maxDistance * 2 && Math.abs(text.y - rect.y) < 50;
-        const isNearTopLeft =
-          text.x < rect.x + 20 &&
-          text.y < rect.y + 20 &&
-          text.x > rect.x - maxDistance &&
-          text.y > rect.y - maxDistance;
+        // Multi-strategy matching approach
+        const matchResult = this.evaluateTextRectangleMatch(text, rect, maxDistance);
 
-        // Calculate alignment score
-        const horizontalAlignment = Math.abs(text.x - rect.x) < 30 ? 1 : 0;
-        const verticalAlignment = Math.abs(text.y - rect.y) < 10 ? 1 : 0;
-
-        // Calculate proximity score (closer is better)
-        const proximityScore = 1 - distance / maxDistance;
-
-        // Calculate total match score
-        let score = proximityScore * 0.4 + text.confidence * 0.3;
-
-        if (isAbove)
-          score += 0.3; // Strong preference for labels above
-        else if (isLeft)
-          score += 0.2; // Medium preference for labels to the left
-        else if (isNearTopLeft) score += 0.15; // Weak preference for nearby
-
-        score += horizontalAlignment * 0.05 + verticalAlignment * 0.05;
+        // Apply structure-based bonuses if available
+        if (structure) {
+          matchResult.score = this.applyStructureBonus(matchResult.score, text, rect, structure);
+        }
 
         // Update best match if this is better
-        if (!bestMatch || score > bestMatch.score) {
-          bestMatch = { text, score };
+        if (!bestMatch || matchResult.score > bestMatch.score) {
+          bestMatch = {
+            text,
+            score: matchResult.score,
+            strategy: matchResult.strategy,
+          };
         }
       }
 
@@ -728,10 +1117,34 @@ export class PdfFieldDetector {
         : `field_${pageNum}_${Math.round(rect.x)}_${Math.round(rect.y)}`;
 
       const label = bestMatch ? bestMatch.text.text : '';
-      const confidence = bestMatch ? Math.min(bestMatch.score, bestMatch.text.confidence) : 0.5;
+      const matchStrategy = bestMatch?.strategy as
+        | 'above'
+        | 'left'
+        | 'inside'
+        | 'nearby'
+        | 'none'
+        | undefined;
+
+      // Calculate final confidence with field candidate bonus
+      let confidence = bestMatch ? Math.min(bestMatch.score, bestMatch.text.confidence) : 0.5;
+      if (rect.isFieldCandidate) {
+        confidence = Math.min(1.0, confidence * 1.1); // 10% bonus for field candidates
+      }
 
       // Determine field type with improved heuristics
       const fieldType = this.determineFieldType(rect, label);
+
+      // Generate warnings for low-confidence detections
+      const warnings: string[] = [];
+      if (confidence < 0.6) {
+        warnings.push('Low confidence detection - manual review recommended');
+      }
+      if (!rect.isFieldCandidate) {
+        warnings.push('May be decorative element rather than input field');
+      }
+      if (!bestMatch) {
+        warnings.push('No label found - field name auto-generated');
+      }
 
       // Convert Y coordinate to PDF coordinate system (from bottom)
       const pdfY = pageHeight - (rect.y + rect.height);
@@ -746,10 +1159,141 @@ export class PdfFieldDetector {
         page: pageNum,
         confidence: confidence,
         type: fieldType,
+        matchStrategy: matchStrategy || 'none',
+        warnings: warnings.length > 0 ? warnings : undefined,
       });
     }
 
     return fields;
+  }
+
+  /**
+   * Apply bonus to match score based on form structure context
+   */
+  private applyStructureBonus(
+    baseScore: number,
+    text: DetectedText,
+    rect: DetectedRectangle,
+    structure: FormStructure
+  ): number {
+    let bonus = 0;
+
+    // Bonus for fields in table structures (table headers are reliable)
+    for (const table of structure.tables) {
+      if (this.isInTable(rect, table)) {
+        // Check if text is in table header position
+        const isHeader = text.y < table.y && text.y > table.y - 40;
+        if (isHeader) {
+          bonus += 0.1; // 10% bonus for table headers
+        }
+      }
+    }
+
+    // Bonus for fields in well-defined sections
+    for (const section of structure.sections) {
+      if (this.isInSection(rect, section)) {
+        // If section has a title, fields are more reliable
+        if (section.title) {
+          bonus += 0.05; // 5% bonus for fields in titled sections
+        }
+      }
+    }
+
+    // Bonus for forms with grid pattern (more structured)
+    if (structure.hasGrid) {
+      bonus += 0.05; // 5% bonus for grid layouts
+    }
+
+    return Math.min(1.0, baseScore + bonus);
+  }
+
+  /**
+   * Check if rectangle is within a table
+   */
+  private isInTable(rect: DetectedRectangle, table: TableStructure): boolean {
+    return (
+      rect.x >= table.x &&
+      rect.x + rect.width <= table.x + table.width &&
+      rect.y >= table.y &&
+      rect.y + rect.height <= table.y + table.height
+    );
+  }
+
+  /**
+   * Check if rectangle is within a section
+   */
+  private isInSection(rect: DetectedRectangle, section: SectionStructure): boolean {
+    return (
+      rect.x >= section.x &&
+      rect.x + rect.width <= section.x + section.width &&
+      rect.y >= section.y &&
+      rect.y + rect.height <= section.y + section.height
+    );
+  }
+
+  /**
+   * Evaluate text-to-rectangle match using multiple strategies
+   * Returns score and strategy used
+   */
+  private evaluateTextRectangleMatch(
+    text: DetectedText,
+    rect: DetectedRectangle,
+    maxDistance: number
+  ): { score: number; strategy: string } {
+    const distance = this.calculateDistance({ x: text.x, y: text.y }, { x: rect.x, y: rect.y });
+
+    // Strategy 1: Label above field (most common in Polish forms)
+    const isAbove = text.y < rect.y && text.y > rect.y - maxDistance;
+    const aboveScore = isAbove
+      ? 0.3 + (1 - Math.abs(text.x - rect.x) / 100) * 0.2 + (1 - distance / maxDistance) * 0.5
+      : 0;
+
+    // Strategy 2: Label to the left of field
+    const isLeft =
+      text.x < rect.x && text.x > rect.x - maxDistance * 2 && Math.abs(text.y - rect.y) < 50;
+    const leftScore = isLeft
+      ? 0.2 + (1 - Math.abs(text.y - rect.y) / 50) * 0.2 + (1 - distance / maxDistance) * 0.5
+      : 0;
+
+    // Strategy 3: Label inside field box (e.g., checkboxes with labels)
+    const isInside =
+      text.x >= rect.x &&
+      text.x <= rect.x + rect.width &&
+      text.y >= rect.y &&
+      text.y <= rect.y + rect.height;
+    const insideScore = isInside ? 0.25 + text.confidence * 0.5 : 0;
+
+    // Strategy 4: Label in table header (above and within horizontal bounds)
+    const isTableHeader =
+      text.y < rect.y &&
+      text.y > rect.y - 60 &&
+      text.x >= rect.x - 10 &&
+      text.x <= rect.x + rect.width + 10;
+    const tableHeaderScore = isTableHeader
+      ? 0.25 +
+        (1 - Math.abs(text.x + text.width / 2 - (rect.x + rect.width / 2)) / rect.width) * 0.3
+      : 0;
+
+    // Strategy 5: Nearby (general proximity)
+    const isNearby = distance < maxDistance;
+    const nearbyScore = isNearby
+      ? 0.15 + (1 - distance / maxDistance) * 0.3 + text.confidence * 0.2
+      : 0;
+
+    // Find best strategy
+    const strategies = [
+      { name: 'above', score: aboveScore },
+      { name: 'left', score: leftScore },
+      { name: 'inside', score: insideScore },
+      { name: 'tableHeader', score: tableHeaderScore },
+      { name: 'nearby', score: nearbyScore },
+    ];
+
+    const best = strategies.reduce((prev, current) =>
+      current.score > prev.score ? current : prev
+    );
+
+    return { score: best.score, strategy: best.name };
   }
 
   /**
@@ -791,6 +1335,7 @@ export class PdfFieldDetector {
 
   /**
    * Determine field type based on size, shape, and label with improved heuristics
+   * Enhanced to recognize Polish form patterns (PESEL, NIP, województwo, miasto, etc.)
    */
   private determineFieldType(
     rect: DetectedRectangle,
@@ -806,9 +1351,24 @@ export class PdfFieldDetector {
       return 'checkbox';
     }
 
+    // Checkbox keywords in Polish forms
+    const checkboxKeywords = ['tak', 'nie', 'yes', 'no', 'zaznacz', 'wybierz'];
+    const hasCheckboxKeyword = checkboxKeywords.some((keyword) => labelLower.includes(keyword));
+    if (hasCheckboxKeyword && rect.width < 40 && rect.height < 40) {
+      return 'checkbox';
+    }
+
     // Enhanced signature field detection
     // Large boxes with signature-related keywords
-    const signatureKeywords = ['podpis', 'signature', 'sign', 'pieczęć', 'stamp'];
+    const signatureKeywords = [
+      'podpis',
+      'signature',
+      'sign',
+      'pieczęć',
+      'pieczec',
+      'stamp',
+      'data i podpis',
+    ];
     const hasSignatureKeyword = signatureKeywords.some((keyword) => labelLower.includes(keyword));
 
     if (hasSignatureKeyword && area > 4000) {
@@ -820,11 +1380,38 @@ export class PdfFieldDetector {
       return 'signature';
     }
 
-    // Date fields - typically small with date keywords
-    const dateKeywords = ['data', 'date', 'dzień', 'miesiac', 'rok'];
-    const hasDateKeyword = dateKeywords.some((keyword) => labelLower.includes(keyword));
-    if (hasDateKeyword && rect.width < 150 && rect.height < 40) {
-      return 'text';
+    // Polish-specific field patterns
+    const polishFieldKeywords = {
+      pesel: ['pesel'],
+      nip: ['nip'],
+      regon: ['regon'],
+      wojewodztwo: ['województwo', 'wojewodztwo', 'woj.', 'woj'],
+      miasto: ['miasto', 'miejscowość', 'miejscowosc'],
+      ulica: ['ulica', 'ul.', 'ul'],
+      kodPocztowy: ['kod pocztowy', 'kod', 'pocztowy'],
+      telefon: ['telefon', 'tel.', 'tel', 'numer telefonu'],
+      email: ['e-mail', 'email', 'adres e-mail'],
+      data: ['data', 'date', 'dzień', 'dzien', 'miesiąc', 'miesiac', 'rok', 'r.'],
+    };
+
+    // Check for specific Polish field types
+    for (const [fieldType, keywords] of Object.entries(polishFieldKeywords)) {
+      if (keywords.some((keyword) => labelLower.includes(keyword))) {
+        // PESEL, NIP, REGON are typically medium-width fields
+        if (['pesel', 'nip', 'regon'].includes(fieldType)) {
+          if (rect.width < 200 && rect.height < 35) {
+            return 'text';
+          }
+        }
+        // Date fields are typically small
+        if (fieldType === 'data') {
+          if (rect.width < 150 && rect.height < 40) {
+            return 'text';
+          }
+        }
+        // All other identified fields are text
+        return 'text';
+      }
     }
 
     // Everything else is a text field
@@ -834,7 +1421,9 @@ export class PdfFieldDetector {
   /**
    * Generate a mapping.json file from detected fields
    */
+
   generateMapping(detectionResult: FieldDetectionResult, formVersion: string = '2023'): object {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fields: Record<string, any> = {};
 
     for (const field of detectionResult.fields) {
@@ -876,10 +1465,12 @@ export class PdfFieldDetector {
    */
 
   createDebugVisualization(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     canvas: any,
     rectangles: DetectedRectangle[],
     texts: DetectedText[],
     fields: DetectedField[]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): any {
     const debugCanvas = document.createElement('canvas');
     debugCanvas.width = canvas.width;
