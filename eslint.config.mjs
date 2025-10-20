@@ -35,6 +35,8 @@ export default [
         React: 'readonly',
         JSX: 'readonly',
         URL: 'readonly',
+        fetch: 'readonly',
+        Blob: 'readonly',
       },
     },
     settings: {

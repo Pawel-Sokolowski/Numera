@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
-import { Label } from "./ui/label";
-import { Badge } from "./ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Separator } from "./ui/separator";
-import { ScrollArea } from "./ui/scroll-area";
-import { Mail, Send, Inbox, Sent, Archive, Trash2, Paperclip, Search, Filter } from "lucide-react";
-import { Email } from "../types/client";
-import { mockEmails } from "../data/mockData";
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
+import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Separator } from './ui/separator';
+import { ScrollArea } from './ui/scroll-area';
+import { Mail, Send, Inbox, Sent, Archive, Trash2, Paperclip, Search, Filter } from 'lucide-react';
+import { Email } from '../types/client';
+import { mockEmails } from '../data/mockData';
 import { toast } from 'sonner';
 
 export function EmailCenter() {
@@ -23,27 +23,26 @@ export function EmailCenter() {
     cc: '',
     bcc: '',
     subject: '',
-    content: ''
+    content: '',
   });
 
-  const unreadCount = emails.filter(email => !email.isRead).length;
-  const sentEmails = emails.filter(email => email.from === 'ja@nasza-firma.pl');
-  const inboxEmails = emails.filter(email => email.from !== 'ja@nasza-firma.pl');
+  const unreadCount = emails.filter((email) => !email.isRead).length;
+  const sentEmails = emails.filter((email) => email.from === 'ja@nasza-firma.pl');
+  const inboxEmails = emails.filter((email) => email.from !== 'ja@nasza-firma.pl');
 
-  const filteredEmails = inboxEmails.filter(email => 
-    email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    email.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    email.content.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEmails = inboxEmails.filter(
+    (email) =>
+      email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.content.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEmailClick = (email: Email) => {
     setSelectedEmail(email);
     setIsComposing(false);
-    
+
     if (!email.isRead) {
-      setEmails(prev => 
-        prev.map(e => e.id === email.id ? { ...e, isRead: true } : e)
-      );
+      setEmails((prev) => prev.map((e) => (e.id === email.id ? { ...e, isRead: true } : e)));
     }
   };
 
@@ -55,33 +54,33 @@ export function EmailCenter() {
       cc: '',
       bcc: '',
       subject: '',
-      content: ''
+      content: '',
     });
   };
 
   const handleSendEmail = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!composeData.to || !composeData.subject || !composeData.content) {
-      toast.error("Wypełnij wymagane pola");
+      toast.error('Wypełnij wymagane pola');
       return;
     }
 
     const newEmail: Email = {
       id: Date.now().toString(),
       from: 'ja@nasza-firma.pl',
-      to: composeData.to.split(',').map(email => email.trim()),
-      cc: composeData.cc ? composeData.cc.split(',').map(email => email.trim()) : undefined,
-      bcc: composeData.bcc ? composeData.bcc.split(',').map(email => email.trim()) : undefined,
+      to: composeData.to.split(',').map((email) => email.trim()),
+      cc: composeData.cc ? composeData.cc.split(',').map((email) => email.trim()) : undefined,
+      bcc: composeData.bcc ? composeData.bcc.split(',').map((email) => email.trim()) : undefined,
       subject: composeData.subject,
       content: composeData.content,
       timestamp: new Date().toISOString(),
-      isRead: true
+      isRead: true,
     };
 
-    setEmails(prev => [...prev, newEmail]);
+    setEmails((prev) => [...prev, newEmail]);
     setIsComposing(false);
-    toast.success("Email wysłany pomyślnie");
+    toast.success('Email wysłany pomyślnie');
   };
 
   const handleReply = () => {
@@ -91,11 +90,32 @@ export function EmailCenter() {
         cc: '',
         bcc: '',
         subject: `Re: ${selectedEmail.subject}`,
-        content: `\n\n--- Oryginalna wiadomość ---\nOd: ${selectedEmail.from}\nData: ${new Date(selectedEmail.timestamp).toLocaleString('pl-PL')}\nTemat: ${selectedEmail.subject}\n\n${selectedEmail.content}`
+        content: `\n\n--- Oryginalna wiadomość ---\nOd: ${selectedEmail.from}\nData: ${new Date(selectedEmail.timestamp).toLocaleString('pl-PL')}\nTemat: ${selectedEmail.subject}\n\n${selectedEmail.content}`,
       });
       setIsComposing(true);
       setSelectedEmail(null);
     }
+  };
+
+  const handleArchiveEmail = () => {
+    if (selectedEmail) {
+      // In a real app, this would update the email status in the database
+      toast.success('Email został przeniesiony do archiwum');
+      setSelectedEmail(null);
+    }
+  };
+
+  const handleDeleteEmail = () => {
+    if (selectedEmail && window.confirm('Czy na pewno chcesz usunąć tę wiadomość?')) {
+      setEmails((prev) => prev.filter((email) => email.id !== selectedEmail.id));
+      toast.success('Email został usunięty');
+      setSelectedEmail(null);
+    }
+  };
+
+  const handleAttachFile = () => {
+    // In a real app, this would open a file picker
+    toast.info('Funkcja załączania plików będzie dostępna wkrótce');
   };
 
   const formatDate = (timestamp: string) => {
@@ -117,20 +137,20 @@ export function EmailCenter() {
               <span className={`text-sm ${!email.isRead ? 'font-semibold' : ''}`}>
                 {email.from}
               </span>
-              {!email.isRead && <Badge variant="secondary" className="text-xs">Nowy</Badge>}
+              {!email.isRead && (
+                <Badge variant="secondary" className="text-xs">
+                  Nowy
+                </Badge>
+              )}
             </div>
-            <span className="text-xs text-muted-foreground">
-              {formatDate(email.timestamp)}
-            </span>
+            <span className="text-xs text-muted-foreground">{formatDate(email.timestamp)}</span>
           </div>
           <div className="mb-1">
             <span className={`text-sm ${!email.isRead ? 'font-semibold' : ''}`}>
               {email.subject}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground line-clamp-2">
-            {email.content}
-          </p>
+          <p className="text-xs text-muted-foreground line-clamp-2">{email.content}</p>
         </div>
       ))}
     </div>
@@ -141,9 +161,7 @@ export function EmailCenter() {
       <div className="flex items-center justify-between">
         <div>
           <h1>Centrum Emailowe</h1>
-          <p className="text-muted-foreground">
-            Zarządzaj swoją pocztą elektroniczną
-          </p>
+          <p className="text-muted-foreground">Zarządzaj swoją pocztą elektroniczną</p>
         </div>
         <Button onClick={handleCompose}>
           <Mail className="mr-2 h-4 w-4" />
@@ -158,9 +176,7 @@ export function EmailCenter() {
             <CardTitle className="flex items-center gap-2">
               <Inbox className="h-4 w-4" />
               Skrzynka odbiorcza
-              {unreadCount > 0 && (
-                <Badge variant="secondary">{unreadCount}</Badge>
-              )}
+              {unreadCount > 0 && <Badge variant="secondary">{unreadCount}</Badge>}
             </CardTitle>
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -175,9 +191,7 @@ export function EmailCenter() {
             </div>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-96">
-              {renderEmailList(filteredEmails)}
-            </ScrollArea>
+            <ScrollArea className="h-96">{renderEmailList(filteredEmails)}</ScrollArea>
           </CardContent>
         </Card>
 
@@ -195,19 +209,21 @@ export function EmailCenter() {
                     <Input
                       id="to"
                       value={composeData.to}
-                      onChange={(e) => setComposeData(prev => ({ ...prev, to: e.target.value }))}
+                      onChange={(e) => setComposeData((prev) => ({ ...prev, to: e.target.value }))}
                       placeholder="odbiorca@email.com"
                       required
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="cc">DW</Label>
                       <Input
                         id="cc"
                         value={composeData.cc}
-                        onChange={(e) => setComposeData(prev => ({ ...prev, cc: e.target.value }))}
+                        onChange={(e) =>
+                          setComposeData((prev) => ({ ...prev, cc: e.target.value }))
+                        }
                         placeholder="dw@email.com"
                       />
                     </div>
@@ -216,7 +232,9 @@ export function EmailCenter() {
                       <Input
                         id="bcc"
                         value={composeData.bcc}
-                        onChange={(e) => setComposeData(prev => ({ ...prev, bcc: e.target.value }))}
+                        onChange={(e) =>
+                          setComposeData((prev) => ({ ...prev, bcc: e.target.value }))
+                        }
                         placeholder="udw@email.com"
                       />
                     </div>
@@ -227,7 +245,9 @@ export function EmailCenter() {
                     <Input
                       id="subject"
                       value={composeData.subject}
-                      onChange={(e) => setComposeData(prev => ({ ...prev, subject: e.target.value }))}
+                      onChange={(e) =>
+                        setComposeData((prev) => ({ ...prev, subject: e.target.value }))
+                      }
                       placeholder="Temat wiadomości"
                       required
                     />
@@ -238,7 +258,9 @@ export function EmailCenter() {
                     <Textarea
                       id="content"
                       value={composeData.content}
-                      onChange={(e) => setComposeData(prev => ({ ...prev, content: e.target.value }))}
+                      onChange={(e) =>
+                        setComposeData((prev) => ({ ...prev, content: e.target.value }))
+                      }
                       placeholder="Treść wiadomości..."
                       rows={12}
                       required
@@ -253,7 +275,7 @@ export function EmailCenter() {
                     <Button type="button" variant="outline" onClick={() => setIsComposing(false)}>
                       Anuluj
                     </Button>
-                    <Button type="button" variant="outline">
+                    <Button type="button" variant="outline" onClick={handleAttachFile}>
                       <Paperclip className="mr-2 h-4 w-4" />
                       Załącz plik
                     </Button>
@@ -275,10 +297,15 @@ export function EmailCenter() {
                     <Button variant="outline" size="sm" onClick={handleReply}>
                       Odpowiedz
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleArchiveEmail}
+                      title="Archiwizuj"
+                    >
                       <Archive className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleDeleteEmail} title="Usuń">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -289,13 +316,13 @@ export function EmailCenter() {
                   <div className="text-sm">
                     <strong>Do:</strong> {selectedEmail.to.join(', ')}
                     {selectedEmail.cc && (
-                      <div><strong>DW:</strong> {selectedEmail.cc.join(', ')}</div>
+                      <div>
+                        <strong>DW:</strong> {selectedEmail.cc.join(', ')}
+                      </div>
                     )}
                   </div>
                   <Separator />
-                  <div className="whitespace-pre-wrap">
-                    {selectedEmail.content}
-                  </div>
+                  <div className="whitespace-pre-wrap">{selectedEmail.content}</div>
                 </div>
               </CardContent>
             </>

@@ -1,19 +1,43 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Badge } from "./ui/badge";
-import { Switch } from "./ui/switch";
-import { Checkbox } from "./ui/checkbox";
-import { Separator } from "./ui/separator";
-import { Alert, AlertDescription } from "./ui/alert";
-import { X, Plus, User, Building2, Calculator, Shield, Download, Mail, AlertCircle, Check } from "lucide-react";
-import { Client, ClientFormData, CompanyOwner, CEIDGCompanyData } from "../types/client";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Badge } from './ui/badge';
+import { Switch } from './ui/switch';
+import { Checkbox } from './ui/checkbox';
+import { Separator } from './ui/separator';
+import { Alert, AlertDescription } from './ui/alert';
+import {
+  X,
+  Plus,
+  User,
+  Building2,
+  Calculator,
+  Shield,
+  Download,
+  Mail,
+  AlertCircle,
+  Check,
+} from 'lucide-react';
+import {
+  Client,
+  ClientFormData,
+  CompanyOwner,
+  CEIDGCompanyData,
+  AutoInvoiceItem,
+} from '../types/client';
 import { toast } from 'sonner';
-import { validateEmail, validateEmailDomain, getEmailDomainType, calculateZusEndDate, formatDateRange, generateEmailFolders } from "../utils/validation";
+import {
+  validateEmail,
+  validateEmailDomain,
+  getEmailDomainType,
+  calculateZusEndDate,
+  formatDateRange,
+  generateEmailFolders,
+} from '../utils/validation';
 
 interface ClientFormProps {
   client?: Client;
@@ -48,7 +72,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       spolkaCywilna: false,
       fundacja: false,
       stowarzyszenie: false,
-      other: ''
+      other: '',
     },
     taxType: client?.taxType || {
       ryczalt: false,
@@ -57,21 +81,21 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       cit: false,
       citEstonski: false,
       kartaPodatkowa: false,
-      other: ''
+      other: '',
     },
     accountingType: client?.accountingType || {
       kpir: false,
       pelneKsiegi: false,
       ewidencjaProchodow: false,
       ryczaltEwidencyjny: false,
-      other: ''
+      other: '',
     },
     zusInfo: client?.zusInfo || {
       malyZus: false,
       pelnyZus: false,
       other: '',
       startDate: '',
-      healthInsurance: true
+      healthInsurance: true,
     },
     ksefEnabled: client?.ksefEnabled || false,
     ksefToken: client?.ksefToken || '',
@@ -89,8 +113,8 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       paymentTerms: 14,
       items: [],
       documentsLimit: 35,
-      documentsLimitWarning: true
-    }
+      documentsLimitWarning: true,
+    },
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -100,7 +124,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     firstName: '',
     lastName: '',
     share: 0,
-    role: 'wlasciciel'
+    role: 'wlasciciel',
   });
   const [loadingCEIDG, setLoadingCEIDG] = useState(false);
   const [emailFolders, setEmailFolders] = useState<string[]>(client?.emailFolders || []);
@@ -121,40 +145,46 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       firstName: formData.firstName,
       lastName: formData.lastName,
       businessType: formData.businessType,
-      nip: formData.nip
+      nip: formData.nip,
     });
     setEmailFolders(folders);
-  }, [formData.company, formData.firstName, formData.lastName, formData.businessType, formData.nip]);
+  }, [
+    formData.company,
+    formData.firstName,
+    formData.lastName,
+    formData.businessType,
+    formData.nip,
+  ]);
 
   const handleInputChange = (field: keyof ClientFormData, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleEmailChange = (index: number, value: string) => {
     const updatedEmails = [...formData.emails];
     updatedEmails[index] = value;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      emails: updatedEmails
+      emails: updatedEmails,
     }));
   };
 
   const addEmail = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      emails: [...prev.emails, '']
+      emails: [...prev.emails, ''],
     }));
   };
 
   const removeEmail = (index: number) => {
     if (formData.emails.length > 1) {
       const updatedEmails = formData.emails.filter((_, i) => i !== index);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        emails: updatedEmails
+        emails: updatedEmails,
       }));
     }
   };
@@ -163,16 +193,16 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
   const handleTaxEmailChange = (index: number, value: string) => {
     const updatedEmails = [...(formData.taxNotificationEmails || [''])];
     updatedEmails[index] = value;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      taxNotificationEmails: updatedEmails
+      taxNotificationEmails: updatedEmails,
     }));
   };
 
   const addTaxEmail = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      taxNotificationEmails: [...(prev.taxNotificationEmails || ['']), '']
+      taxNotificationEmails: [...(prev.taxNotificationEmails || ['']), ''],
     }));
   };
 
@@ -180,26 +210,30 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     const emails = formData.taxNotificationEmails || [''];
     if (emails.length > 1) {
       const updatedEmails = emails.filter((_, i) => i !== index);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        taxNotificationEmails: updatedEmails
+        taxNotificationEmails: updatedEmails,
       }));
     }
   };
 
-  const handleCheckboxChange = (section: 'businessType' | 'taxType' | 'accountingType' | 'zusInfo', field: string, checked: boolean) => {
-    setFormData(prev => ({
+  const handleCheckboxChange = (
+    section: 'businessType' | 'taxType' | 'accountingType' | 'zusInfo',
+    field: string,
+    checked: boolean
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [section]: {
         ...prev[section],
-        [field]: checked
-      }
+        [field]: checked,
+      },
     }));
   };
 
   const handleCEIDGFetch = async () => {
     if (!formData.nip || formData.nip.length !== 10) {
-      toast.error("Wprowadź poprawny 10-cyfrowy NIP");
+      toast.error('Wprowadź poprawny 10-cyfrowy NIP');
       return;
     }
 
@@ -207,34 +241,34 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     try {
       // Symulacja wywołania API CEIDG (w rzeczywistości wymagałoby prawdziwego API)
       const mockCEIDGData: CEIDGCompanyData = {
-        nazwa: "Przykładowa Firma Sp. z o.o.",
+        nazwa: 'Przykładowa Firma Sp. z o.o.',
         nip: formData.nip,
-        regon: "123456789",
+        regon: '123456789',
         adres: {
-          ulica: "ul. Przykładowa 123",
-          miasto: "Warszawa",
-          kodPocztowy: "00-001",
-          wojewodztwo: "mazowieckie"
+          ulica: 'ul. Przykładowa 123',
+          miasto: 'Warszawa',
+          kodPocztowy: '00-001',
+          wojewodztwo: 'mazowieckie',
         },
-        pkd: ["6201Z", "6202Z"],
-        dataRozpoczeciaDzialalnosci: "2020-01-15",
-        status: "aktywna"
+        pkd: ['6201Z', '6202Z'],
+        dataRozpoczeciaDzialalnosci: '2020-01-15',
+        status: 'aktywna',
       };
 
       // Wypełnienie formularza danymi z CEIDG
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         company: mockCEIDGData.nazwa,
         regon: mockCEIDGData.regon || prev.regon,
         street: mockCEIDGData.adres.ulica,
         city: mockCEIDGData.adres.miasto,
         zipCode: mockCEIDGData.adres.kodPocztowy,
-        state: mockCEIDGData.adres.wojewodztwo
+        state: mockCEIDGData.adres.wojewodztwo,
       }));
 
-      toast.success("Dane zostały pobrane z CEIDG i wypełnione w formularzu");
+      toast.success('Dane zostały pobrane z CEIDG i wypełnione w formularzu');
     } catch (error) {
-      toast.error("Błąd podczas pobierania danych z CEIDG");
+      toast.error('Błąd podczas pobierania danych z CEIDG');
     } finally {
       setLoadingCEIDG(false);
     }
@@ -249,18 +283,18 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
   };
 
   const removeTag = (tagToRemove: string) => {
-    setCurrentTags(prev => prev.filter(tag => tag !== tagToRemove));
+    setCurrentTags((prev) => prev.filter((tag) => tag !== tagToRemove));
   };
 
   const addOwner = () => {
     if (!newOwner.firstName || !newOwner.lastName || !newOwner.share) {
-      toast.error("Wypełnij wszystkie wymagane pola właściciela");
+      toast.error('Wypełnij wszystkie wymagane pola właściciela');
       return;
     }
 
     const totalShares = owners.reduce((sum, owner) => sum + owner.share, 0) + newOwner.share;
     if (totalShares > 100) {
-      toast.error("Suma udziałów nie może przekroczyć 100%");
+      toast.error('Suma udziałów nie może przekroczyć 100%');
       return;
     }
 
@@ -272,20 +306,20 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       share: newOwner.share!,
       role: newOwner.role!,
       email: newOwner.email,
-      phone: newOwner.phone
+      phone: newOwner.phone,
     };
 
-    setOwners(prev => [...prev, owner]);
+    setOwners((prev) => [...prev, owner]);
     setNewOwner({
       firstName: '',
       lastName: '',
       share: 0,
-      role: 'wlasciciel'
+      role: 'wlasciciel',
     });
   };
 
   const removeOwner = (ownerId: string) => {
-    setOwners(prev => prev.filter(owner => owner.id !== ownerId));
+    setOwners((prev) => prev.filter((owner) => owner.id !== ownerId));
   };
 
   const renderZusDateRange = () => {
@@ -293,13 +327,13 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
 
     const zusType = formData.zusInfo.malyZus ? 'maly' : 'pelny';
     const endDate = calculateZusEndDate(formData.zusInfo.startDate, zusType);
-    
+
     return (
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
           Okres: {formatDateRange(formData.zusInfo.startDate, endDate)}
-          {formData.zusInfo.malyZus && " (Mały ZUS - 6 miesięcy)"}
+          {formData.zusInfo.malyZus && ' (Mały ZUS - 6 miesięcy)'}
         </AlertDescription>
       </Alert>
     );
@@ -307,21 +341,21 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.firstName || !formData.lastName || !formData.emails[0]) {
-      toast.error("Wypełnij wszystkie wymagane pola");
+      toast.error('Wypełnij wszystkie wymagane pola');
       return;
     }
 
     // Walidacja emaili
-    const invalidEmails = formData.emails.filter(email => email && !validateEmail(email));
+    const invalidEmails = formData.emails.filter((email) => email && !validateEmail(email));
     if (invalidEmails.length > 0) {
-      toast.error("Niektóre adresy email są nieprawidłowe");
+      toast.error('Niektóre adresy email są nieprawidłowe');
       return;
     }
 
-    const validEmails = formData.emails.filter(email => email.trim() !== '');
-    
+    const validEmails = formData.emails.filter((email) => email.trim() !== '');
+
     const clientData: Partial<Client> = {
       firstName: formData.firstName,
       lastName: formData.lastName,
@@ -337,7 +371,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
         city: formData.city,
         state: formData.state,
         zipCode: formData.zipCode,
-        country: formData.country
+        country: formData.country,
       },
       status: formData.status,
       notes: formData.notes,
@@ -348,9 +382,12 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       accountingType: formData.accountingType,
       zusInfo: {
         ...formData.zusInfo,
-        calculatedEndDate: formData.zusInfo.startDate ? 
-          calculateZusEndDate(formData.zusInfo.startDate, formData.zusInfo.malyZus ? 'maly' : 'pelny') : 
-          undefined
+        calculatedEndDate: formData.zusInfo.startDate
+          ? calculateZusEndDate(
+              formData.zusInfo.startDate,
+              formData.zusInfo.malyZus ? 'maly' : 'pelny'
+            )
+          : undefined,
       },
       owners,
       ksefEnabled: formData.ksefEnabled,
@@ -358,12 +395,15 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       emailTemplates: client?.emailTemplates || [],
       employeeCount: formData.employeeCount,
       invoiceEmail: formData.invoiceEmail,
-      taxNotificationEmails: formData.taxNotificationEmails?.filter(email => email.trim() !== '') || [],
-      emailFolders
+      taxNotificationEmails:
+        formData.taxNotificationEmails?.filter((email) => email.trim() !== '') || [],
+      emailFolders,
     };
 
     onSave(clientData);
-    toast.success(client ? "Klient został zaktualizowany pomyślnie" : "Klient został dodany pomyślnie");
+    toast.success(
+      client ? 'Klient został zaktualizowany pomyślnie' : 'Klient został dodany pomyślnie'
+    );
   };
 
   return (
@@ -371,7 +411,9 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       <div>
         <h1>{client ? 'Edytuj Klienta' : 'Dodaj Nowego Klienta'}</h1>
         <p className="text-muted-foreground">
-          {client ? 'Zaktualizuj informacje o kliencie' : 'Wprowadź informacje o kliencie, aby dodać go do systemu'}
+          {client
+            ? 'Zaktualizuj informacje o kliencie'
+            : 'Wprowadź informacje o kliencie, aby dodać go do systemu'}
         </p>
       </div>
 
@@ -417,7 +459,9 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                         type="email"
                         value={email}
                         onChange={(e) => handleEmailChange(index, e.target.value)}
-                        placeholder={index === 0 ? "email@example.com (główny)" : "dodatkowy@example.com"}
+                        placeholder={
+                          index === 0 ? 'email@example.com (główny)' : 'dodatkowy@example.com'
+                        }
                         required={index === 0}
                       />
                       {email && (
@@ -425,8 +469,16 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                           {validateEmail(email) ? (
                             <div className="flex items-center gap-1 text-sm">
                               <Check className="h-3 w-3 text-green-600" />
-                              <span className={getEmailDomainType(email) === 'business' ? 'text-blue-600' : 'text-muted-foreground'}>
-                                {getEmailDomainType(email) === 'business' ? 'Domena firmowa' : 'Popularna domena'}
+                              <span
+                                className={
+                                  getEmailDomainType(email) === 'business'
+                                    ? 'text-blue-600'
+                                    : 'text-muted-foreground'
+                                }
+                              >
+                                {getEmailDomainType(email) === 'business'
+                                  ? 'Domena firmowa'
+                                  : 'Popularna domena'}
                               </span>
                             </div>
                           ) : (
@@ -504,15 +556,25 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                         type="email"
                         value={email}
                         onChange={(e) => handleTaxEmailChange(index, e.target.value)}
-                        placeholder={index === 0 ? "podatki@firma.pl (główny)" : "dodatkowy@firma.pl"}
+                        placeholder={
+                          index === 0 ? 'podatki@firma.pl (główny)' : 'dodatkowy@firma.pl'
+                        }
                       />
                       {email && (
                         <div className="mt-1 flex items-center gap-2">
                           {validateEmail(email) ? (
                             <div className="flex items-center gap-1 text-sm">
                               <Check className="h-3 w-3 text-green-600" />
-                              <span className={getEmailDomainType(email) === 'business' ? 'text-blue-600' : 'text-muted-foreground'}>
-                                {getEmailDomainType(email) === 'business' ? 'Domena firmowa' : 'Popularna domena'}
+                              <span
+                                className={
+                                  getEmailDomainType(email) === 'business'
+                                    ? 'text-blue-600'
+                                    : 'text-muted-foreground'
+                                }
+                              >
+                                {getEmailDomainType(email) === 'business'
+                                  ? 'Domena firmowa'
+                                  : 'Popularna domena'}
                               </span>
                             </div>
                           ) : (
@@ -578,7 +640,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="nip">NIP</Label>
@@ -656,13 +718,15 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                 { key: 'jednoosobowa', label: 'Jednoosobowa działalność gospodarcza' },
                 { key: 'spolkaCywilna', label: 'Spółka cywilna' },
                 { key: 'fundacja', label: 'Fundacja' },
-                { key: 'stowarzyszenie', label: 'Stowarzyszenie' }
+                { key: 'stowarzyszenie', label: 'Stowarzyszenie' },
               ].map(({ key, label }) => (
                 <div key={key} className="flex items-center space-x-2">
                   <Checkbox
                     id={`businessType-${key}`}
-                    checked={formData.businessType[key as keyof typeof formData.businessType] as boolean}
-                    onCheckedChange={(checked) => 
+                    checked={
+                      formData.businessType[key as keyof typeof formData.businessType] as boolean
+                    }
+                    onCheckedChange={(checked) =>
                       handleCheckboxChange('businessType', key, checked as boolean)
                     }
                   />
@@ -699,13 +763,13 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                 { key: 'zasadyOgolne', label: 'Zasady ogólne (skala podatkowa)' },
                 { key: 'cit', label: 'Podatek dochodowy od osób prawnych (CIT)' },
                 { key: 'citEstonski', label: 'Estoński CIT' },
-                { key: 'kartaPodatkowa', label: 'Karta podatkowa' }
+                { key: 'kartaPodatkowa', label: 'Karta podatkowa' },
               ].map(({ key, label }) => (
                 <div key={key} className="flex items-center space-x-2">
                   <Checkbox
                     id={`taxType-${key}`}
                     checked={formData.taxType[key as keyof typeof formData.taxType] as boolean}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       handleCheckboxChange('taxType', key, checked as boolean)
                     }
                   />
@@ -740,13 +804,17 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                 { key: 'kpir', label: 'Księga przychodów i rozchodów' },
                 { key: 'pelneKsiegi', label: 'Pełne księgi rachunkowe' },
                 { key: 'ewidencjaProchodow', label: 'Ewidencja przychodów' },
-                { key: 'ryczaltEwidencyjny', label: 'Ewidencja dla ryczałtu' }
+                { key: 'ryczaltEwidencyjny', label: 'Ewidencja dla ryczałtu' },
               ].map(({ key, label }) => (
                 <div key={key} className="flex items-center space-x-2">
                   <Checkbox
                     id={`accountingType-${key}`}
-                    checked={formData.accountingType[key as keyof typeof formData.accountingType] as boolean}
-                    onCheckedChange={(checked) => 
+                    checked={
+                      formData.accountingType[
+                        key as keyof typeof formData.accountingType
+                      ] as boolean
+                    }
+                    onCheckedChange={(checked) =>
                       handleCheckboxChange('accountingType', key, checked as boolean)
                     }
                   />
@@ -830,7 +898,9 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               <Checkbox
                 id="healthInsurance"
                 checked={formData.zusInfo.healthInsurance}
-                onCheckedChange={(checked) => handleCheckboxChange('zusInfo', 'healthInsurance', checked as boolean)}
+                onCheckedChange={(checked) =>
+                  handleCheckboxChange('zusInfo', 'healthInsurance', checked as boolean)
+                }
               />
               <Label htmlFor="healthInsurance">Ubezpieczenie zdrowotne</Label>
             </div>
@@ -871,9 +941,14 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
             {owners.length > 0 && (
               <div className="space-y-2">
                 {owners.map((owner) => (
-                  <div key={owner.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div
+                    key={owner.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
                     <div>
-                      <p className="font-medium">{owner.firstName} {owner.lastName}</p>
+                      <p className="font-medium">
+                        {owner.firstName} {owner.lastName}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         {owner.role} • {owner.share}% udziałów
                       </p>
@@ -901,7 +976,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                 <Label>Imię</Label>
                 <Input
                   value={newOwner.firstName || ''}
-                  onChange={(e) => setNewOwner(prev => ({ ...prev, firstName: e.target.value }))}
+                  onChange={(e) => setNewOwner((prev) => ({ ...prev, firstName: e.target.value }))}
                   placeholder="Imię właściciela"
                 />
               </div>
@@ -909,7 +984,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                 <Label>Nazwisko</Label>
                 <Input
                   value={newOwner.lastName || ''}
-                  onChange={(e) => setNewOwner(prev => ({ ...prev, lastName: e.target.value }))}
+                  onChange={(e) => setNewOwner((prev) => ({ ...prev, lastName: e.target.value }))}
                   placeholder="Nazwisko właściciela"
                 />
               </div>
@@ -920,7 +995,9 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                   min="0"
                   max="100"
                   value={newOwner.share || ''}
-                  onChange={(e) => setNewOwner(prev => ({ ...prev, share: parseFloat(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setNewOwner((prev) => ({ ...prev, share: parseFloat(e.target.value) || 0 }))
+                  }
                   placeholder="0"
                 />
               </div>
@@ -931,7 +1008,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                 <Label>Rola</Label>
                 <Select
                   value={newOwner.role}
-                  onValueChange={(value: any) => setNewOwner(prev => ({ ...prev, role: value }))}
+                  onValueChange={(value: any) => setNewOwner((prev) => ({ ...prev, role: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -1015,9 +1092,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
         <Card>
           <CardHeader>
             <CardTitle>Integracja KSeF</CardTitle>
-            <CardDescription>
-              Krajowy System e-Faktur - obowiązkowe e-faktury
-            </CardDescription>
+            <CardDescription>Krajowy System e-Faktur - obowiązkowe e-faktury</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-2">
@@ -1056,7 +1131,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value: 'aktualny' | 'archiwalny' | 'potencjalny') => 
+                onValueChange={(value: 'aktualny' | 'archiwalny' | 'potencjalny') =>
                   handleInputChange('status', value)
                 }
               >
@@ -1094,10 +1169,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                   {currentTags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                       {tag}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => removeTag(tag)}
-                      />
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
                     </Badge>
                   ))}
                 </div>
@@ -1133,21 +1205,23 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               <Switch
                 id="auto-invoicing-enabled"
                 checked={formData.autoInvoicing?.enabled || false}
-                onCheckedChange={(checked) => setFormData(prev => ({
-                  ...prev,
-                  autoInvoicing: {
-                    ...prev.autoInvoicing,
-                    enabled: checked,
-                    frequency: prev.autoInvoicing?.frequency || 'monthly',
-                    amount: prev.autoInvoicing?.amount || 0,
-                    description: prev.autoInvoicing?.description || '',
-                    vatRate: prev.autoInvoicing?.vatRate || 23,
-                    paymentTerms: prev.autoInvoicing?.paymentTerms || 14,
-                    items: prev.autoInvoicing?.items || [],
-                    documentsLimit: prev.autoInvoicing?.documentsLimit || 35,
-                    documentsLimitWarning: prev.autoInvoicing?.documentsLimitWarning || true
-                  }
-                }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    autoInvoicing: {
+                      ...prev.autoInvoicing,
+                      enabled: checked,
+                      frequency: prev.autoInvoicing?.frequency || 'monthly',
+                      amount: prev.autoInvoicing?.amount || 0,
+                      description: prev.autoInvoicing?.description || '',
+                      vatRate: prev.autoInvoicing?.vatRate || 23,
+                      paymentTerms: prev.autoInvoicing?.paymentTerms || 14,
+                      items: prev.autoInvoicing?.items || [],
+                      documentsLimit: prev.autoInvoicing?.documentsLimit || 35,
+                      documentsLimitWarning: prev.autoInvoicing?.documentsLimitWarning || true,
+                    },
+                  }))
+                }
               />
               <Label htmlFor="auto-invoicing-enabled">Włącz automatyczne fakturowanie</Label>
             </div>
@@ -1159,13 +1233,15 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                     <Label>Częstotliwość</Label>
                     <Select
                       value={formData.autoInvoicing?.frequency || 'monthly'}
-                      onValueChange={(value) => setFormData(prev => ({
-                        ...prev,
-                        autoInvoicing: {
-                          ...prev.autoInvoicing!,
-                          frequency: value as 'weekly' | 'monthly' | 'quarterly' | 'yearly'
-                        }
-                      }))}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          autoInvoicing: {
+                            ...prev.autoInvoicing!,
+                            frequency: value as 'weekly' | 'monthly' | 'quarterly' | 'yearly',
+                          },
+                        }))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Wybierz częstotliwość" />
@@ -1186,13 +1262,15 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                       min="0"
                       step="0.01"
                       value={formData.autoInvoicing?.amount || 0}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        autoInvoicing: {
-                          ...prev.autoInvoicing!,
-                          amount: parseFloat(e.target.value) || 0
-                        }
-                      }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          autoInvoicing: {
+                            ...prev.autoInvoicing!,
+                            amount: parseFloat(e.target.value) || 0,
+                          },
+                        }))
+                      }
                       placeholder="0.00"
                     />
                   </div>
@@ -1202,13 +1280,15 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                   <Label>Opis usługi</Label>
                   <Input
                     value={formData.autoInvoicing?.description || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      autoInvoicing: {
-                        ...prev.autoInvoicing!,
-                        description: e.target.value
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        autoInvoicing: {
+                          ...prev.autoInvoicing!,
+                          description: e.target.value,
+                        },
+                      }))
+                    }
                     placeholder="np. Obsługa księgowa pełna"
                   />
                 </div>
@@ -1218,13 +1298,15 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                     <Label>Stawka VAT (%)</Label>
                     <Select
                       value={formData.autoInvoicing?.vatRate?.toString() || '23'}
-                      onValueChange={(value) => setFormData(prev => ({
-                        ...prev,
-                        autoInvoicing: {
-                          ...prev.autoInvoicing!,
-                          vatRate: parseInt(value)
-                        }
-                      }))}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          autoInvoicing: {
+                            ...prev.autoInvoicing!,
+                            vatRate: parseInt(value),
+                          },
+                        }))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -1245,13 +1327,15 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                       min="1"
                       max="120"
                       value={formData.autoInvoicing?.paymentTerms || 14}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        autoInvoicing: {
-                          ...prev.autoInvoicing!,
-                          paymentTerms: parseInt(e.target.value) || 14
-                        }
-                      }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          autoInvoicing: {
+                            ...prev.autoInvoicing!,
+                            paymentTerms: parseInt(e.target.value) || 14,
+                          },
+                        }))
+                      }
                     />
                   </div>
 
@@ -1261,13 +1345,15 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                       type="number"
                       min="1"
                       value={formData.autoInvoicing?.documentsLimit || 35}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        autoInvoicing: {
-                          ...prev.autoInvoicing!,
-                          documentsLimit: parseInt(e.target.value) || 35
-                        }
-                      }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          autoInvoicing: {
+                            ...prev.autoInvoicing!,
+                            documentsLimit: parseInt(e.target.value) || 35,
+                          },
+                        }))
+                      }
                     />
                   </div>
                 </div>
@@ -1276,31 +1362,357 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                   <Switch
                     id="documents-warning"
                     checked={formData.autoInvoicing?.documentsLimitWarning || true}
-                    onCheckedChange={(checked) => setFormData(prev => ({
-                      ...prev,
-                      autoInvoicing: {
-                        ...prev.autoInvoicing!,
-                        documentsLimitWarning: checked
-                      }
-                    }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        autoInvoicing: {
+                          ...prev.autoInvoicing!,
+                          documentsLimitWarning: checked,
+                        },
+                      }))
+                    }
                   />
-                  <Label htmlFor="documents-warning">Ostrzegaj o przekroczeniu limitu dokumentów</Label>
+                  <Label htmlFor="documents-warning">
+                    Ostrzegaj o przekroczeniu limitu dokumentów
+                  </Label>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Dodatkowe uwagi dotyczące fakturowania</Label>
                   <Textarea
                     value={formData.autoInvoicing?.notes || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      autoInvoicing: {
-                        ...prev.autoInvoicing!,
-                        notes: e.target.value
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        autoInvoicing: {
+                          ...prev.autoInvoicing!,
+                          notes: e.target.value,
+                        },
+                      }))
+                    }
                     rows={2}
                     placeholder="Specjalne uwagi, dodatkowe usługi, itp."
                   />
+                </div>
+
+                {/* Line Items Editor */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base">Pozycje faktury</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newItem: AutoInvoiceItem = {
+                          id: `item-${Date.now()}`,
+                          name: '',
+                          description: '',
+                          quantity: 1,
+                          unitPrice: 0,
+                          taxRate: 23,
+                          unit: 'szt.',
+                        };
+                        setFormData((prev) => ({
+                          ...prev,
+                          autoInvoicing: {
+                            ...prev.autoInvoicing!,
+                            items: [...(prev.autoInvoicing?.items || []), newItem],
+                          },
+                        }));
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Dodaj pozycję
+                    </Button>
+                  </div>
+
+                  {/* Quick Templates */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        const template: AutoInvoiceItem = {
+                          id: `item-${Date.now()}`,
+                          name: 'Obsługa księgowa',
+                          description: 'Kompleksowa obsługa księgowa',
+                          quantity: 1,
+                          unitPrice: 0,
+                          taxRate: 23,
+                          unit: 'usługa',
+                        };
+                        setFormData((prev) => ({
+                          ...prev,
+                          autoInvoicing: {
+                            ...prev.autoInvoicing!,
+                            items: [...(prev.autoInvoicing?.items || []), template],
+                          },
+                        }));
+                      }}
+                    >
+                      + Obsługa księgowa
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        const template: AutoInvoiceItem = {
+                          id: `item-${Date.now()}`,
+                          name: 'Deklaracje VAT',
+                          description: 'Sporządzenie i przesłanie deklaracji VAT',
+                          quantity: 1,
+                          unitPrice: 0,
+                          taxRate: 23,
+                          unit: 'usługa',
+                        };
+                        setFormData((prev) => ({
+                          ...prev,
+                          autoInvoicing: {
+                            ...prev.autoInvoicing!,
+                            items: [...(prev.autoInvoicing?.items || []), template],
+                          },
+                        }));
+                      }}
+                    >
+                      + Deklaracje VAT
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        const template: AutoInvoiceItem = {
+                          id: `item-${Date.now()}`,
+                          name: 'Kadry i płace',
+                          description: 'Obsługa kadrowo-płacowa',
+                          quantity: 1,
+                          unitPrice: 0,
+                          taxRate: 23,
+                          unit: 'usługa',
+                        };
+                        setFormData((prev) => ({
+                          ...prev,
+                          autoInvoicing: {
+                            ...prev.autoInvoicing!,
+                            items: [...(prev.autoInvoicing?.items || []), template],
+                          },
+                        }));
+                      }}
+                    >
+                      + Kadry i płace
+                    </Button>
+                  </div>
+
+                  {/* Items List */}
+                  {(formData.autoInvoicing?.items || []).map((item, index) => (
+                    <Card key={item.id || index}>
+                      <CardContent className="pt-4">
+                        <div className="space-y-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                              <div className="space-y-2">
+                                <Label>Nazwa pozycji *</Label>
+                                <Input
+                                  value={item.name}
+                                  onChange={(e) => {
+                                    const newItems = [...(formData.autoInvoicing?.items || [])];
+                                    newItems[index] = { ...newItems[index], name: e.target.value };
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      autoInvoicing: {
+                                        ...prev.autoInvoicing!,
+                                        items: newItems,
+                                      },
+                                    }));
+                                  }}
+                                  placeholder="np. Obsługa księgowa"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Opis</Label>
+                                <Textarea
+                                  value={item.description || ''}
+                                  onChange={(e) => {
+                                    const newItems = [...(formData.autoInvoicing?.items || [])];
+                                    newItems[index] = {
+                                      ...newItems[index],
+                                      description: e.target.value,
+                                    };
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      autoInvoicing: {
+                                        ...prev.autoInvoicing!,
+                                        items: newItems,
+                                      },
+                                    }));
+                                  }}
+                                  rows={2}
+                                  placeholder="Szczegółowy opis usługi"
+                                />
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newItems = (formData.autoInvoicing?.items || []).filter(
+                                  (_, i) => i !== index
+                                );
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  autoInvoicing: {
+                                    ...prev.autoInvoicing!,
+                                    items: newItems,
+                                  },
+                                }));
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div className="space-y-2">
+                              <Label>Ilość</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newItems = [...(formData.autoInvoicing?.items || [])];
+                                  newItems[index] = {
+                                    ...newItems[index],
+                                    quantity: parseFloat(e.target.value) || 0,
+                                  };
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    autoInvoicing: {
+                                      ...prev.autoInvoicing!,
+                                      items: newItems,
+                                    },
+                                  }));
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Jednostka</Label>
+                              <Select
+                                value={item.unit || 'szt.'}
+                                onValueChange={(value) => {
+                                  const newItems = [...(formData.autoInvoicing?.items || [])];
+                                  newItems[index] = { ...newItems[index], unit: value };
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    autoInvoicing: {
+                                      ...prev.autoInvoicing!,
+                                      items: newItems,
+                                    },
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="szt.">szt.</SelectItem>
+                                  <SelectItem value="godz.">godz.</SelectItem>
+                                  <SelectItem value="usługa">usługa</SelectItem>
+                                  <SelectItem value="m²">m²</SelectItem>
+                                  <SelectItem value="kg">kg</SelectItem>
+                                  <SelectItem value="komplet">komplet</SelectItem>
+                                  <SelectItem value="dzień">dzień</SelectItem>
+                                  <SelectItem value="miesiąc">miesiąc</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Cena jedn.</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.unitPrice}
+                                onChange={(e) => {
+                                  const newItems = [...(formData.autoInvoicing?.items || [])];
+                                  newItems[index] = {
+                                    ...newItems[index],
+                                    unitPrice: parseFloat(e.target.value) || 0,
+                                  };
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    autoInvoicing: {
+                                      ...prev.autoInvoicing!,
+                                      items: newItems,
+                                    },
+                                  }));
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>VAT (%)</Label>
+                              <Select
+                                value={item.taxRate.toString()}
+                                onValueChange={(value) => {
+                                  const newItems = [...(formData.autoInvoicing?.items || [])];
+                                  newItems[index] = {
+                                    ...newItems[index],
+                                    taxRate: parseInt(value),
+                                  };
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    autoInvoicing: {
+                                      ...prev.autoInvoicing!,
+                                      items: newItems,
+                                    },
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="0">0% (zw)</SelectItem>
+                                  <SelectItem value="5">5%</SelectItem>
+                                  <SelectItem value="8">8%</SelectItem>
+                                  <SelectItem value="23">23%</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Wartość</Label>
+                              <Input
+                                type="text"
+                                disabled
+                                value={(item.quantity * item.unitPrice).toFixed(2)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {/* Total Summary */}
+                  {(formData.autoInvoicing?.items || []).length > 0 && (
+                    <Card className="bg-muted">
+                      <CardContent className="pt-4">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Suma netto:</span>
+                          <span className="text-lg font-bold">
+                            {(formData.autoInvoicing?.items || [])
+                              .reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+                              .toFixed(2)}{' '}
+                            PLN
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </div>
             )}
@@ -1308,9 +1720,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
         </Card>
 
         <div className="flex gap-2">
-          <Button type="submit">
-            {client ? 'Zaktualizuj Klienta' : 'Dodaj Klienta'}
-          </Button>
+          <Button type="submit">{client ? 'Zaktualizuj Klienta' : 'Dodaj Klienta'}</Button>
           <Button type="button" variant="outline" onClick={onCancel}>
             Anuluj
           </Button>

@@ -108,7 +108,7 @@ export interface Client {
   lastContact?: string;
   notes?: string;
   additionalInfo?: string;
-  
+
   // Business and tax information
   businessType?: string;
   taxType?: string;
@@ -116,23 +116,23 @@ export interface Client {
   zusType?: string;
   zusTypeOther?: string;
   zusInfo?: ZUSInfo;
-  
+
   // Ownership and contacts
   owners?: Owner[];
   employeeCount?: number;
-  
+
   // Communication
   communicationEmails?: CommunicationEmail[];
   invoiceEmail?: string;
   taxNotificationEmails?: string[];
   emailFolders?: string[];
   emailTemplates?: EmailTemplate[];
-  
+
   // System fields
   ksefEnabled?: boolean;
   ksefToken?: string;
   hiddenTags?: string[];
-  
+
   // AUTOMATIC INVOICING SETTINGS
   autoInvoicing?: AutoInvoicingSettings;
 }
@@ -152,6 +152,8 @@ export interface User {
   lastSeen?: string;
   position?: string;
   phone?: string;
+  pesel?: string;
+  address?: Address;
   isActive?: boolean;
 }
 

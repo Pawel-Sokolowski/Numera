@@ -1,18 +1,26 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Badge } from "./ui/badge";
-import { Switch } from "./ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Checkbox } from "./ui/checkbox";
-import { UserPlus, Edit, Trash2, Shield, Users, Building, BarChart3 } from "lucide-react";
-import { User, Permission, Company, Department } from "../types/client";
-import { mockUsers, mockCompany } from "../data/mockData";
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Badge } from './ui/badge';
+import { Switch } from './ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Checkbox } from './ui/checkbox';
+import { ScrollArea } from './ui/scroll-area';
+import { UserPlus, Edit, Trash2, Shield, Users, Building, BarChart3 } from 'lucide-react';
+import { User, Permission, Company, Department } from '../types/client';
+import { mockUsers, mockCompany } from '../data/mockData';
 import { toast } from 'sonner';
 
 export function UserManagement() {
@@ -27,39 +35,39 @@ export function UserManagement() {
     email: '',
     role: 'pracownik' as User['role'],
     isActive: true,
-    permissions: [] as Permission[]
+    permissions: [] as Permission[],
   });
 
   const roleLabels = {
-    'admin': 'Administrator',
-    'sekretariat': 'Sekretariat',
-    'ksiegowosc': 'Księgowość',
-    'kadry': 'Kadry',
-    'pracownik': 'Pracownik'
+    admin: 'Administrator',
+    sekretariat: 'Sekretariat',
+    ksiegowosc: 'Księgowość',
+    kadry: 'Kadry',
+    pracownik: 'Pracownik',
   };
 
   const moduleLabels = {
-    'klienci': 'Klienci',
-    'faktury': 'Faktury',
-    'email': 'Email',
-    'chat': 'Chat',
-    'kalendarz': 'Kalendarz',
-    'ceidg': 'CEIDG',
-    'raporty': 'Raporty',
-    'kontrakty': 'Kontrakty',
-    'dokumenty': 'Dokumenty',
-    'szablony': 'Szablony',
-    'bankowosc': 'Bankowość',
-    'czas_pracy': 'Czas pracy',
-    'ustawienia': 'Ustawienia',
-    'zarzadzanie_uzytkownikami': 'Zarządzanie użytkownikami'
+    klienci: 'Klienci',
+    faktury: 'Faktury',
+    email: 'Email',
+    chat: 'Chat',
+    kalendarz: 'Kalendarz',
+    ceidg: 'CEIDG',
+    raporty: 'Raporty',
+    kontrakty: 'Kontrakty',
+    dokumenty: 'Dokumenty',
+    szablony: 'Szablony',
+    bankowosc: 'Bankowość',
+    czas_pracy: 'Czas pracy',
+    ustawienia: 'Ustawienia',
+    zarzadzanie_uzytkownikami: 'Zarządzanie użytkownikami',
   };
 
   const actionLabels = {
-    'read': 'Odczyt',
-    'write': 'Zapis',
-    'delete': 'Usuwanie',
-    'admin': 'Administracja'
+    read: 'Odczyt',
+    write: 'Zapis',
+    delete: 'Usuwanie',
+    admin: 'Administracja',
   };
 
   const getDefaultPermissions = (role: User['role']): Permission[] => {
@@ -79,39 +87,39 @@ export function UserManagement() {
           { module: 'bankowosc', actions: ['read', 'write', 'delete', 'admin'] },
           { module: 'czas_pracy', actions: ['read', 'write', 'delete', 'admin'] },
           { module: 'ustawienia', actions: ['read', 'write', 'delete', 'admin'] },
-          { module: 'zarzadzanie_uzytkownikami', actions: ['read', 'write', 'delete', 'admin'] }
+          { module: 'zarzadzanie_uzytkownikami', actions: ['read', 'write', 'delete', 'admin'] },
         ];
       case 'sekretariat':
         return [
           { module: 'klienci', actions: ['read', 'write'] },
           { module: 'email', actions: ['read', 'write'] },
           { module: 'chat', actions: ['read', 'write'] },
-          { module: 'kalendarz', actions: ['read', 'write'] }
+          { module: 'kalendarz', actions: ['read', 'write'] },
         ];
       case 'ksiegowosc':
         return [
           { module: 'klienci', actions: ['read'] },
           { module: 'faktury', actions: ['read', 'write', 'delete'] },
           { module: 'ceidg', actions: ['read', 'write'] },
-          { module: 'raporty', actions: ['read', 'write'] }
+          { module: 'raporty', actions: ['read', 'write'] },
         ];
       case 'kadry':
         return [
           { module: 'klienci', actions: ['read'] },
           { module: 'kalendarz', actions: ['read', 'write'] },
-          { module: 'chat', actions: ['read', 'write'] }
+          { module: 'chat', actions: ['read', 'write'] },
         ];
       default:
         return [
           { module: 'chat', actions: ['read', 'write'] },
-          { module: 'kalendarz', actions: ['read'] }
+          { module: 'kalendarz', actions: ['read'] },
         ];
     }
   };
 
   const handleCreateUser = () => {
     if (!newUser.firstName || !newUser.lastName || !newUser.email) {
-      toast.error("Wypełnij wszystkie wymagane pola");
+      toast.error('Wypełnij wszystkie wymagane pola');
       return;
     }
 
@@ -122,10 +130,11 @@ export function UserManagement() {
       email: newUser.email,
       role: newUser.role,
       isActive: newUser.isActive,
-      permissions: newUser.permissions.length > 0 ? newUser.permissions : getDefaultPermissions(newUser.role)
+      permissions:
+        newUser.permissions.length > 0 ? newUser.permissions : getDefaultPermissions(newUser.role),
     };
 
-    setUsers(prev => [...prev, user]);
+    setUsers((prev) => [...prev, user]);
     setIsCreating(false);
     setNewUser({
       firstName: '',
@@ -133,31 +142,33 @@ export function UserManagement() {
       email: '',
       role: 'pracownik',
       isActive: true,
-      permissions: []
+      permissions: [],
     });
-    toast.success("Użytkownik został dodany");
+    toast.success('Użytkownik został dodany');
   };
 
   const handleRoleChange = (role: User['role']) => {
-    setNewUser(prev => ({
+    setNewUser((prev) => ({
       ...prev,
       role,
-      permissions: getDefaultPermissions(role)
+      permissions: getDefaultPermissions(role),
     }));
   };
 
   const updatePermission = (moduleKey: string, action: string, enabled: boolean) => {
-    setNewUser(prev => {
+    setNewUser((prev) => {
       const updatedPermissions = [...prev.permissions];
-      const moduleIndex = updatedPermissions.findIndex(p => p.module === moduleKey);
-      
+      const moduleIndex = updatedPermissions.findIndex((p) => p.module === moduleKey);
+
       if (moduleIndex >= 0) {
         if (enabled) {
           if (!updatedPermissions[moduleIndex].actions.includes(action as any)) {
             updatedPermissions[moduleIndex].actions.push(action as any);
           }
         } else {
-          updatedPermissions[moduleIndex].actions = updatedPermissions[moduleIndex].actions.filter(a => a !== action);
+          updatedPermissions[moduleIndex].actions = updatedPermissions[moduleIndex].actions.filter(
+            (a) => a !== action
+          );
           if (updatedPermissions[moduleIndex].actions.length === 0) {
             updatedPermissions.splice(moduleIndex, 1);
           }
@@ -165,41 +176,42 @@ export function UserManagement() {
       } else if (enabled) {
         updatedPermissions.push({
           module: moduleKey as any,
-          actions: [action as any]
+          actions: [action as any],
         });
       }
-      
+
       return { ...prev, permissions: updatedPermissions };
     });
   };
 
   const hasPermission = (moduleKey: string, action: string) => {
-    const permission = newUser.permissions.find(p => p.module === moduleKey);
+    const permission = newUser.permissions.find((p) => p.module === moduleKey);
     return permission?.actions.includes(action as any) || false;
   };
 
   const toggleUserStatus = (userId: string) => {
-    setUsers(prev => prev.map(user => 
-      user.id === userId ? { ...user, isActive: !user.isActive } : user
-    ));
+    setUsers((prev) =>
+      prev.map((user) => (user.id === userId ? { ...user, isActive: !user.isActive } : user))
+    );
   };
 
   const deleteUser = (userId: string) => {
-    if (confirm('Czy na pewno chcesz usunąć tego użytkownika?')) {
-      setUsers(prev => prev.filter(user => user.id !== userId));
-      toast.success("Użytkownik został usunięty");
+    if (window.confirm('Czy na pewno chcesz usunąć tego użytkownika?')) {
+      setUsers((prev) => prev.filter((user) => user.id !== userId));
+      toast.success('Użytkownik został usunięty');
     }
   };
 
   const updateEmployeeCount = (departmentId: string, count: number) => {
-    setCompany(prev => ({
+    setCompany((prev) => ({
       ...prev,
-      departments: prev.departments.map(dept =>
+      departments: prev.departments.map((dept) =>
         dept.id === departmentId ? { ...dept, employeeCount: count } : dept
       ),
-      totalEmployees: prev.departments.reduce((sum, dept) => 
-        sum + (dept.id === departmentId ? count : dept.employeeCount), 0
-      )
+      totalEmployees: prev.departments.reduce(
+        (sum, dept) => sum + (dept.id === departmentId ? count : dept.employeeCount),
+        0
+      ),
     }));
   };
 
@@ -208,9 +220,7 @@ export function UserManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1>Zarządzanie Użytkownikami</h1>
-          <p className="text-muted-foreground">
-            Zarządzaj personelem i uprawnieniami w systemie
-          </p>
+          <p className="text-muted-foreground">Zarządzaj personelem i uprawnieniami w systemie</p>
         </div>
       </div>
 
@@ -235,7 +245,7 @@ export function UserManagement() {
             <div>
               <h2>Lista Użytkowników</h2>
               <p className="text-muted-foreground text-sm">
-                Aktywnych użytkowników: {users.filter(u => u.isActive).length} / {users.length}
+                Aktywnych użytkowników: {users.filter((u) => u.isActive).length} / {users.length}
               </p>
             </div>
             <Dialog open={isCreating} onOpenChange={setIsCreating}>
@@ -258,7 +268,9 @@ export function UserManagement() {
                       <Label>Imię *</Label>
                       <Input
                         value={newUser.firstName}
-                        onChange={(e) => setNewUser(prev => ({ ...prev, firstName: e.target.value }))}
+                        onChange={(e) =>
+                          setNewUser((prev) => ({ ...prev, firstName: e.target.value }))
+                        }
                         placeholder="Imię"
                       />
                     </div>
@@ -266,7 +278,9 @@ export function UserManagement() {
                       <Label>Nazwisko *</Label>
                       <Input
                         value={newUser.lastName}
-                        onChange={(e) => setNewUser(prev => ({ ...prev, lastName: e.target.value }))}
+                        onChange={(e) =>
+                          setNewUser((prev) => ({ ...prev, lastName: e.target.value }))
+                        }
                         placeholder="Nazwisko"
                       />
                     </div>
@@ -278,22 +292,21 @@ export function UserManagement() {
                       <Input
                         type="email"
                         value={newUser.email}
-                        onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
                         placeholder="email@biuro.pl"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>Rola</Label>
-                      <Select
-                        value={newUser.role}
-                        onValueChange={handleRoleChange}
-                      >
+                      <Select value={newUser.role} onValueChange={handleRoleChange}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {Object.entries(roleLabels).map(([key, label]) => (
-                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                            <SelectItem key={key} value={key}>
+                              {label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -303,43 +316,45 @@ export function UserManagement() {
                   <div className="flex items-center space-x-2">
                     <Switch
                       checked={newUser.isActive}
-                      onCheckedChange={(checked) => setNewUser(prev => ({ ...prev, isActive: checked }))}
+                      onCheckedChange={(checked) =>
+                        setNewUser((prev) => ({ ...prev, isActive: checked }))
+                      }
                     />
                     <Label>Aktywny użytkownik</Label>
                   </div>
 
                   <div>
                     <Label className="text-base">Uprawnienia</Label>
-                    <div className="mt-4 space-y-4">
-                      {Object.entries(moduleLabels).map(([moduleKey, moduleLabel]) => (
-                        <Card key={moduleKey}>
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm">{moduleLabel}</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="flex flex-wrap gap-4">
-                              {Object.entries(actionLabels).map(([actionKey, actionLabel]) => (
-                                <div key={actionKey} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    checked={hasPermission(moduleKey, actionKey)}
-                                    onCheckedChange={(checked) => 
-                                      updatePermission(moduleKey, actionKey, checked as boolean)
-                                    }
-                                  />
-                                  <Label className="text-sm">{actionLabel}</Label>
-                                </div>
-                              ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                    <ScrollArea className="h-[400px] mt-4 pr-4">
+                      <div className="space-y-4">
+                        {Object.entries(moduleLabels).map(([moduleKey, moduleLabel]) => (
+                          <Card key={moduleKey}>
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm">{moduleLabel}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="flex flex-wrap gap-4">
+                                {Object.entries(actionLabels).map(([actionKey, actionLabel]) => (
+                                  <div key={actionKey} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      checked={hasPermission(moduleKey, actionKey)}
+                                      onCheckedChange={(checked) =>
+                                        updatePermission(moduleKey, actionKey, checked as boolean)
+                                      }
+                                    />
+                                    <Label className="text-sm">{actionLabel}</Label>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </div>
 
                   <div className="flex gap-2">
-                    <Button onClick={handleCreateUser}>
-                      Dodaj użytkownika
-                    </Button>
+                    <Button onClick={handleCreateUser}>Dodaj użytkownika</Button>
                     <Button variant="outline" onClick={() => setIsCreating(false)}>
                       Anuluj
                     </Button>
@@ -369,15 +384,11 @@ export function UserManagement() {
                           <div className="font-medium">
                             {user.firstName} {user.lastName}
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {user.email}
-                          </div>
+                          <div className="text-sm text-muted-foreground">{user.email}</div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {roleLabels[user.role]}
-                        </Badge>
+                        <Badge variant="outline">{roleLabels[user.role]}</Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={user.isActive ? 'default' : 'secondary'}>
@@ -407,11 +418,7 @@ export function UserManagement() {
                           >
                             <Shield className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedUser(user)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedUser(user)}>
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
@@ -430,15 +437,238 @@ export function UserManagement() {
               </Table>
             </CardContent>
           </Card>
+
+          {/* Edit User Dialog */}
+          <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edytuj użytkownika</DialogTitle>
+                <DialogDescription>Zaktualizuj dane użytkownika i uprawnienia</DialogDescription>
+              </DialogHeader>
+              {selectedUser && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Imię *</Label>
+                      <Input
+                        value={selectedUser.firstName}
+                        onChange={(e) =>
+                          setSelectedUser((prev) =>
+                            prev ? { ...prev, firstName: e.target.value } : null
+                          )
+                        }
+                        placeholder="Imię"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nazwisko *</Label>
+                      <Input
+                        value={selectedUser.lastName}
+                        onChange={(e) =>
+                          setSelectedUser((prev) =>
+                            prev ? { ...prev, lastName: e.target.value } : null
+                          )
+                        }
+                        placeholder="Nazwisko"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Email *</Label>
+                      <Input
+                        type="email"
+                        value={selectedUser.email}
+                        onChange={(e) =>
+                          setSelectedUser((prev) =>
+                            prev ? { ...prev, email: e.target.value } : null
+                          )
+                        }
+                        placeholder="email@biuro.pl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>PESEL</Label>
+                      <Input
+                        value={selectedUser.pesel || ''}
+                        onChange={(e) =>
+                          setSelectedUser((prev) =>
+                            prev ? { ...prev, pesel: e.target.value } : null
+                          )
+                        }
+                        placeholder="12345678901"
+                        maxLength={11}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Telefon</Label>
+                      <Input
+                        type="tel"
+                        value={selectedUser.phone || ''}
+                        onChange={(e) =>
+                          setSelectedUser((prev) =>
+                            prev ? { ...prev, phone: e.target.value } : null
+                          )
+                        }
+                        placeholder="+48 123 456 789"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Stanowisko</Label>
+                      <Input
+                        value={selectedUser.position || ''}
+                        onChange={(e) =>
+                          setSelectedUser((prev) =>
+                            prev ? { ...prev, position: e.target.value } : null
+                          )
+                        }
+                        placeholder="np. Księgowy"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Address Fields */}
+                  <div className="space-y-4">
+                    <Label className="text-base">Adres</Label>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <Label>Ulica</Label>
+                        <Input
+                          value={selectedUser.address?.street || ''}
+                          onChange={(e) =>
+                            setSelectedUser((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    address: { ...(prev.address || {}), street: e.target.value },
+                                  }
+                                : null
+                            )
+                          }
+                          placeholder="ul. Przykładowa 123"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Miasto</Label>
+                          <Input
+                            value={selectedUser.address?.city || ''}
+                            onChange={(e) =>
+                              setSelectedUser((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      address: { ...(prev.address || {}), city: e.target.value },
+                                    }
+                                  : null
+                              )
+                            }
+                            placeholder="Warszawa"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Kod pocztowy</Label>
+                          <Input
+                            value={selectedUser.address?.zipCode || ''}
+                            onChange={(e) =>
+                              setSelectedUser((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      address: { ...(prev.address || {}), zipCode: e.target.value },
+                                    }
+                                  : null
+                              )
+                            }
+                            placeholder="00-001"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Województwo</Label>
+                          <Input
+                            value={selectedUser.address?.state || ''}
+                            onChange={(e) =>
+                              setSelectedUser((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      address: { ...(prev.address || {}), state: e.target.value },
+                                    }
+                                  : null
+                              )
+                            }
+                            placeholder="mazowieckie"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Rola</Label>
+                      <Select
+                        value={selectedUser.role}
+                        onValueChange={(value) =>
+                          setSelectedUser((prev) => (prev ? { ...prev, role: value } : null))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(roleLabels).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center space-x-2 pt-8">
+                      <Switch
+                        checked={selectedUser.isActive}
+                        onCheckedChange={(checked) =>
+                          setSelectedUser((prev) => (prev ? { ...prev, isActive: checked } : null))
+                        }
+                      />
+                      <Label>Aktywny użytkownik</Label>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        if (selectedUser) {
+                          setUsers((prevUsers) =>
+                            prevUsers.map((u) => (u.id === selectedUser.id ? selectedUser : u))
+                          );
+                          toast.success('Użytkownik został zaktualizowany');
+                          setSelectedUser(null);
+                        }
+                      }}
+                    >
+                      Zapisz zmiany
+                    </Button>
+                    <Button variant="outline" onClick={() => setSelectedUser(null)}>
+                      Anuluj
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="departments" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Działy w firmie</CardTitle>
-              <CardDescription>
-                Zarządzaj działami i liczbą pracowników
-              </CardDescription>
+              <CardDescription>Zarządzaj działami i liczbą pracowników</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -447,7 +677,8 @@ export function UserManagement() {
                     <CardHeader>
                       <CardTitle className="text-lg">{department.name}</CardTitle>
                       <CardDescription>
-                        Kierownik: {users.find(u => u.id === department.managerId)?.firstName} {users.find(u => u.id === department.managerId)?.lastName}
+                        Kierownik: {users.find((u) => u.id === department.managerId)?.firstName}{' '}
+                        {users.find((u) => u.id === department.managerId)?.lastName}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -458,7 +689,9 @@ export function UserManagement() {
                             type="number"
                             min="0"
                             value={department.employeeCount}
-                            onChange={(e) => updateEmployeeCount(department.id, parseInt(e.target.value) || 0)}
+                            onChange={(e) =>
+                              updateEmployeeCount(department.id, parseInt(e.target.value) || 0)
+                            }
                             className="w-20"
                           />
                           <span className="text-sm text-muted-foreground">osób</span>
@@ -491,12 +724,8 @@ export function UserManagement() {
                 <CardTitle>Aktywni użytkownicy systemu</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">
-                  {users.filter(u => u.isActive).length}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  z {users.length} zarejestrowanych
-                </p>
+                <div className="text-3xl font-bold">{users.filter((u) => u.isActive).length}</div>
+                <p className="text-sm text-muted-foreground">z {users.length} zarejestrowanych</p>
               </CardContent>
             </Card>
 
@@ -506,14 +735,19 @@ export function UserManagement() {
               </CardHeader>
               <CardContent>
                 <div className="text-lg font-bold">
-                  {company.departments.reduce((prev, current) => 
-                    prev.employeeCount > current.employeeCount ? prev : current
-                  ).name}
+                  {
+                    company.departments.reduce((prev, current) =>
+                      prev.employeeCount > current.employeeCount ? prev : current
+                    ).name
+                  }
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {company.departments.reduce((prev, current) => 
-                    prev.employeeCount > current.employeeCount ? prev : current
-                  ).employeeCount} pracowników
+                  {
+                    company.departments.reduce((prev, current) =>
+                      prev.employeeCount > current.employeeCount ? prev : current
+                    ).employeeCount
+                  }{' '}
+                  pracowników
                 </p>
               </CardContent>
             </Card>
@@ -526,18 +760,16 @@ export function UserManagement() {
             <CardContent>
               <div className="space-y-4">
                 {Object.entries(roleLabels).map(([role, label]) => {
-                  const count = users.filter(u => u.role === role).length;
+                  const count = users.filter((u) => u.role === role).length;
                   const percentage = users.length > 0 ? (count / users.length) * 100 : 0;
-                  
+
                   return (
                     <div key={role} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{label}</Badge>
                         <span className="text-sm">{count} użytkowników</span>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {percentage.toFixed(1)}%
-                      </div>
+                      <div className="text-sm text-muted-foreground">{percentage.toFixed(1)}%</div>
                     </div>
                   );
                 })}

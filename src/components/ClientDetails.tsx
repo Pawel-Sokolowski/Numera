@@ -1,9 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Separator } from "./ui/separator";
-import { ArrowLeft, Edit, Mail, Phone, MapPin, Building, Calendar, Tag } from "lucide-react";
-import { Client } from "../types/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Separator } from './ui/separator';
+import { ArrowLeft, Edit, Mail, Phone, MapPin, Building, Calendar, Tag } from 'lucide-react';
+import { Client } from '../types/client';
+import { toast } from 'sonner';
 
 interface ClientDetailsProps {
   client: Client;
@@ -12,46 +13,69 @@ interface ClientDetailsProps {
 }
 
 export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
+  const handleSendEmail = () => {
+    const email = client.emails?.[0] || client.invoiceEmail;
+    if (email) {
+      window.location.href = `mailto:${email}`;
+      toast.success(`Otwieranie aplikacji email dla ${email}`);
+    } else {
+      toast.error('Brak adresu email dla tego klienta');
+    }
+  };
+
+  const handleCallClient = () => {
+    if (client.phone) {
+      window.location.href = `tel:${client.phone}`;
+      toast.success(`Nawiązywanie połączenia z ${client.phone}`);
+    } else {
+      toast.error('Brak numeru telefonu dla tego klienta');
+    }
+  };
+
+  const handleScheduleMeeting = () => {
+    toast.info('Przekierowanie do kalendarza...');
+    // In a real app, this would navigate to the calendar with client pre-selected
+  };
   const getStatusLabel = (status: string) => {
     const labels = {
-      'aktywny': 'Aktywny',
-      'nieaktywny': 'Nieaktywny',
-      'potencjalny': 'Potencjalny'
+      aktywny: 'Aktywny',
+      nieaktywny: 'Nieaktywny',
+      potencjalny: 'Potencjalny',
     };
     return labels[status as keyof typeof labels] || status;
   };
 
   const getBusinessTypeLabel = (businessType: string) => {
     const labels = {
-      'sp_zoo': 'Spółka z o.o.',
-      'komandytowa': 'Spółka komandytowa',
-      'akcyjna': 'Spółka akcyjna',
-      'jednoosobowa': 'Jednoosobowa działalność gospodarcza',
-      'spolka_cywilna': 'Spółka cywilna',
-      'fundacja': 'Fundacja',
-      'stowarzyszenie': 'Stowarzyszenie'
+      sp_zoo: 'Spółka z o.o.',
+      komandytowa: 'Spółka komandytowa',
+      akcyjna: 'Spółka akcyjna',
+      jednoosobowa: 'Jednoosobowa działalność gospodarcza',
+      spolka_cywilna: 'Spółka cywilna',
+      fundacja: 'Fundacja',
+      stowarzyszenie: 'Stowarzyszenie',
     };
     return labels[businessType as keyof typeof labels] || businessType;
   };
 
   const getTaxTypeLabel = (taxType: string) => {
     const labels = {
-      'ryczalt': 'Ryczałt od przychodów ewidencjonowanych',
-      'liniowy': 'Podatek liniowy 19%',
-      'zasady_ogolne': 'Zasady ogólne (skala podatkowa)',
-      'cit': 'Podatek dochodowy od osób prawnych (CIT)',
-      'cit_estonski': 'Estoński CIT',
-      'karta_podatkowa': 'Karta podatkowa'
+      ryczalt: 'Ryczałt od przychodów ewidencjonowanych',
+      liniowy: 'Podatek liniowy 19%',
+      zasady_ogolne: 'Zasady ogólne (skala podatkowa)',
+      cit: 'Podatek dochodowy od osób prawnych (CIT)',
+      cit_estonski: 'Estoński CIT',
+      karta_podatkowa: 'Karta podatkowa',
     };
     return labels[taxType as keyof typeof labels] || taxType;
   };
 
   const getAccountingTypeLabel = (accountingType: string) => {
     const labels = {
-      'kpir': 'Księga przychodów i rozchodów',
-      'pelne_ksiegi': 'Pełne księgi rachunkowe',
-      'ewidencja_przychodow': 'Ewidencja przychodów',
-      'ryczalt_ewidencyjny': 'Ewidencja dla ryczałtu'
+      kpir: 'Księga przychodów i rozchodów',
+      pelne_ksiegi: 'Pełne księgi rachunkowe',
+      ewidencja_przychodow: 'Ewidencja przychodów',
+      ryczalt_ewidencyjny: 'Ewidencja dla ryczałtu',
     };
     return labels[accountingType as keyof typeof labels] || accountingType;
   };
@@ -92,8 +116,8 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                     client.status === 'aktywny'
                       ? 'default'
                       : client.status === 'potencjalny'
-                      ? 'secondary'
-                      : 'outline'
+                        ? 'secondary'
+                        : 'outline'
                   }
                   className="text-sm"
                 >
@@ -187,11 +211,9 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                       <div className="space-y-1">
                         {client.address.street && <p>{client.address.street}</p>}
                         <p>
-                          {[
-                            client.address.city,
-                            client.address.state,
-                            client.address.zipCode
-                          ].filter(Boolean).join(', ')}
+                          {[client.address.city, client.address.state, client.address.zipCode]
+                            .filter(Boolean)
+                            .join(', ')}
                         </p>
                         {client.address.country && <p>{client.address.country}</p>}
                       </div>
@@ -237,8 +259,12 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                     )}
                     {client.zusInfo.calculatedEndDate && (
                       <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">Data zakończenia (obliczona)</p>
-                        <p>{new Date(client.zusInfo.calculatedEndDate).toLocaleDateString('pl-PL')}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Data zakończenia (obliczona)
+                        </p>
+                        <p>
+                          {new Date(client.zusInfo.calculatedEndDate).toLocaleDateString('pl-PL')}
+                        </p>
                       </div>
                     )}
                     <div className="space-y-1">
@@ -258,14 +284,25 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                     <h3>Właściciele / Wspólnicy</h3>
                     <div className="space-y-2 pl-6">
                       {client.owners.map((owner) => (
-                        <div key={owner.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div
+                          key={owner.id}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
                           <div>
-                            <p className="font-medium">{owner.firstName} {owner.lastName}</p>
+                            <p className="font-medium">
+                              {owner.firstName} {owner.lastName}
+                            </p>
                             <p className="text-sm text-muted-foreground">
-                              {owner.role === 'wlasciciel' ? 'Właściciel' : 
-                               owner.role === 'wspolnik' ? 'Wspólnik' :
-                               owner.role === 'prezes' ? 'Prezes' :
-                               owner.role === 'prokurent' ? 'Prokurent' : 'Członek zarządu'} • {owner.share}% udziałów
+                              {owner.role === 'wlasciciel'
+                                ? 'Właściciel'
+                                : owner.role === 'wspolnik'
+                                  ? 'Wspólnik'
+                                  : owner.role === 'prezes'
+                                    ? 'Prezes'
+                                    : owner.role === 'prokurent'
+                                      ? 'Prokurent'
+                                      : 'Członek zarządu'}{' '}
+                              • {owner.share}% udziałów
                             </p>
                             {owner.email && (
                               <p className="text-xs text-muted-foreground">{owner.email}</p>
@@ -284,13 +321,13 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                 <h3>Integracja KSeF</h3>
                 <div className="pl-6">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${client.ksefEnabled ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <div
+                      className={`w-2 h-2 rounded-full ${client.ksefEnabled ? 'bg-green-500' : 'bg-gray-400'}`}
+                    ></div>
                     <p>{client.ksefEnabled ? 'Włączona' : 'Wyłączona'}</p>
                   </div>
                   {client.ksefEnabled && client.ksefToken && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Token skonfigurowany
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">Token skonfigurowany</p>
                   )}
                 </div>
               </div>
@@ -310,13 +347,17 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
                       <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Częstotliwość</p>
-                        <p>{
-                          client.autoInvoicing.frequency === 'weekly' ? 'Co tydzień' :
-                          client.autoInvoicing.frequency === 'monthly' ? 'Co miesiąc' :
-                          client.autoInvoicing.frequency === 'quarterly' ? 'Co kwartał' :
-                          client.autoInvoicing.frequency === 'yearly' ? 'Co rok' : 
-                          client.autoInvoicing.frequency
-                        }</p>
+                        <p>
+                          {client.autoInvoicing.frequency === 'weekly'
+                            ? 'Co tydzień'
+                            : client.autoInvoicing.frequency === 'monthly'
+                              ? 'Co miesiąc'
+                              : client.autoInvoicing.frequency === 'quarterly'
+                                ? 'Co kwartał'
+                                : client.autoInvoicing.frequency === 'yearly'
+                                  ? 'Co rok'
+                                  : client.autoInvoicing.frequency}
+                        </p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Kwota netto</p>
@@ -336,7 +377,9 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Ostrzeżenia o limicie</p>
-                        <p>{client.autoInvoicing.documentsLimitWarning ? 'Włączone' : 'Wyłączone'}</p>
+                        <p>
+                          {client.autoInvoicing.documentsLimitWarning ? 'Włączone' : 'Wyłączone'}
+                        </p>
                       </div>
                       {client.autoInvoicing.description && (
                         <div className="col-span-2 space-y-1">
@@ -347,7 +390,11 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                       {client.autoInvoicing.nextInvoiceDate && (
                         <div className="space-y-1">
                           <p className="text-sm text-muted-foreground">Następna faktura</p>
-                          <p>{new Date(client.autoInvoicing.nextInvoiceDate).toLocaleDateString('pl-PL')}</p>
+                          <p>
+                            {new Date(client.autoInvoicing.nextInvoiceDate).toLocaleDateString(
+                              'pl-PL'
+                            )}
+                          </p>
                         </div>
                       )}
                       {client.autoInvoicing.items && client.autoInvoicing.items.length > 0 && (
@@ -356,8 +403,11 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                           <div className="space-y-1">
                             {client.autoInvoicing.items.map((item, index) => (
                               <div key={index} className="text-sm p-2 bg-gray-50 rounded">
-                                <strong>{item.name}</strong> - {item.quantity} {item.unit || 'szt'} × {item.unitPrice.toFixed(2)} zł
-                                {item.description && <div className="text-muted-foreground">{item.description}</div>}
+                                <strong>{item.name}</strong> - {item.quantity} {item.unit || 'szt'}{' '}
+                                × {item.unitPrice.toFixed(2)} zł
+                                {item.description && (
+                                  <div className="text-muted-foreground">{item.description}</div>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -365,7 +415,9 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                       )}
                       {client.autoInvoicing.notes && (
                         <div className="col-span-2 space-y-1">
-                          <p className="text-sm text-muted-foreground">Uwagi dotyczące fakturowania</p>
+                          <p className="text-sm text-muted-foreground">
+                            Uwagi dotyczące fakturowania
+                          </p>
                           <p className="text-sm">{client.autoInvoicing.notes}</p>
                         </div>
                       )}
@@ -381,9 +433,7 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                 <div className="space-y-3">
                   <h3>Notatki</h3>
                   <div className="pl-6">
-                    <p className="text-muted-foreground whitespace-pre-wrap">
-                      {client.notes}
-                    </p>
+                    <p className="text-muted-foreground whitespace-pre-wrap">{client.notes}</p>
                   </div>
                 </div>
               )}
@@ -408,7 +458,7 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
                   </p>
                 </div>
               </div>
-              
+
               {client.lastContact && (
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
@@ -450,15 +500,20 @@ export function ClientDetails({ client, onBack, onEdit }: ClientDetailsProps) {
               <CardTitle>Akcje</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full" size="sm">
+              <Button className="w-full" size="sm" onClick={handleSendEmail}>
                 <Mail className="h-4 w-4 mr-2" />
                 Wyślij Email
               </Button>
-              <Button variant="outline" className="w-full" size="sm">
+              <Button variant="outline" className="w-full" size="sm" onClick={handleCallClient}>
                 <Phone className="h-4 w-4 mr-2" />
                 Zadzwoń do klienta
               </Button>
-              <Button variant="outline" className="w-full" size="sm">
+              <Button
+                variant="outline"
+                className="w-full"
+                size="sm"
+                onClick={handleScheduleMeeting}
+              >
                 <Calendar className="h-4 w-4 mr-2" />
                 Zaplanuj spotkanie
               </Button>
