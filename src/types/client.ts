@@ -113,6 +113,7 @@ export interface Client {
   businessType?: string;
   taxType?: string;
   accountingType?: string;
+  taxOffice?: string;
   zusType?: string;
   zusTypeOther?: string;
   zusInfo?: ZUSInfo;
@@ -360,6 +361,7 @@ export interface ClientFormData {
   tags?: string;
   // Business information
   accountingType?: string;
+  taxOffice?: string;
   zusType?: string;
   // Email settings
   invoiceEmail?: string;

@@ -3,32 +3,37 @@ import { UPL1PdfFiller } from './upl1PdfFiller';
 import { TaxFormService } from './taxFormService';
 
 // Form type definitions with complexity levels
-export type FormType = 
+export type FormType =
   // Authorization forms (existing)
-  | 'UPL-1' | 'PEL'
+  | 'UPL-1'
+  | 'PEL'
   // Simple forms - basic client + employee info
   | 'ZAW-FA'
   // Tax forms - comprehensive client data
-  | 'PIT-36' | 'PIT-37' | 'PIT-4R' | 'PIT-11'
+  | 'PIT-36'
+  | 'PIT-37'
+  | 'PIT-4R'
+  | 'PIT-11'
   // VAT forms
-  | 'VAT-7' | 'VAT-7K' | 'VAT-R' | 'VAT-UE'
+  | 'VAT-7'
+  | 'VAT-7K'
+  | 'VAT-R'
+  | 'VAT-UE'
   // CIT forms
   | 'CIT-8'
   // ZUS forms
-  | 'ZUS-DRA' | 'ZUS-RCA' | 'ZUS-ZWUA' | 'ZUS-RMUA'
+  | 'ZUS-DRA'
+  | 'ZUS-RCA'
+  | 'ZUS-ZWUA'
+  | 'ZUS-RMUA'
   // JPK files
-  | 'JPK_VAT' | 'JPK_FA' | 'JPK_KR';
+  | 'JPK_VAT'
+  | 'JPK_FA'
+  | 'JPK_KR';
 
 export type FormComplexity = 'simple' | 'medium' | 'complex';
 
-export type FormCategory = 
-  | 'pelnomocnictwa'
-  | 'pit'
-  | 'vat'
-  | 'cit'
-  | 'zus'
-  | 'jpk'
-  | 'inne';
+export type FormCategory = 'pelnomocnictwa' | 'pit' | 'vat' | 'cit' | 'zus' | 'jpk' | 'inne';
 
 export interface FormMetadata {
   type: FormType;
@@ -53,7 +58,6 @@ interface AuthorizationFormData {
   };
 }
 
-
 // Form metadata registry
 export const FORM_METADATA: Record<FormType, FormMetadata> = {
   // Authorization forms
@@ -64,18 +68,18 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'simple',
     category: 'pelnomocnictwa',
     requiredFields: ['firstName', 'lastName', 'nip'],
-    optionalFields: ['companyName', 'regon', 'address']
+    optionalFields: ['companyName', 'regon', 'address'],
   },
-  'PEL': {
+  PEL: {
     type: 'PEL',
     name: 'PEL',
     description: 'Pełnomocnictwo do ZUS',
     complexity: 'simple',
     category: 'pelnomocnictwa',
     requiredFields: ['firstName', 'lastName', 'nip'],
-    optionalFields: ['companyName', 'regon', 'address']
+    optionalFields: ['companyName', 'regon', 'address'],
   },
-  
+
   // Simple forms
   'ZAW-FA': {
     type: 'ZAW-FA',
@@ -84,9 +88,9 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'simple',
     category: 'inne',
     requiredFields: ['firstName', 'lastName', 'nip'],
-    optionalFields: ['companyName', 'address']
+    optionalFields: ['companyName', 'address'],
   },
-  
+
   // PIT forms - complex
   'PIT-36': {
     type: 'PIT-36',
@@ -95,7 +99,7 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'complex',
     category: 'pit',
     requiredFields: ['firstName', 'lastName', 'nip', 'pesel', 'address', 'taxOffice'],
-    optionalFields: ['regon', 'companyName', 'bankAccount', 'phone', 'email']
+    optionalFields: ['regon', 'companyName', 'bankAccount', 'phone', 'email'],
   },
   'PIT-37': {
     type: 'PIT-37',
@@ -104,7 +108,7 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'complex',
     category: 'pit',
     requiredFields: ['firstName', 'lastName', 'nip', 'pesel', 'address', 'taxOffice'],
-    optionalFields: ['spouse', 'children', 'bankAccount']
+    optionalFields: ['spouse', 'children', 'bankAccount'],
   },
   'PIT-4R': {
     type: 'PIT-4R',
@@ -113,7 +117,7 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'medium',
     category: 'pit',
     requiredFields: ['firstName', 'lastName', 'nip', 'address'],
-    optionalFields: ['regon', 'companyName', 'pkd']
+    optionalFields: ['regon', 'companyName', 'pkd'],
   },
   'PIT-11': {
     type: 'PIT-11',
@@ -122,9 +126,9 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'medium',
     category: 'pit',
     requiredFields: ['companyName', 'nip', 'address'],
-    optionalFields: ['regon', 'email']
+    optionalFields: ['regon', 'email'],
   },
-  
+
   // VAT forms
   'VAT-7': {
     type: 'VAT-7',
@@ -133,7 +137,7 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'medium',
     category: 'vat',
     requiredFields: ['firstName', 'lastName', 'nip', 'address'],
-    optionalFields: ['companyName', 'regon', 'email']
+    optionalFields: ['companyName', 'regon', 'email'],
   },
   'VAT-7K': {
     type: 'VAT-7K',
@@ -142,7 +146,7 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'medium',
     category: 'vat',
     requiredFields: ['firstName', 'lastName', 'nip', 'address'],
-    optionalFields: ['companyName', 'regon', 'email']
+    optionalFields: ['companyName', 'regon', 'email'],
   },
   'VAT-R': {
     type: 'VAT-R',
@@ -151,7 +155,7 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'simple',
     category: 'vat',
     requiredFields: ['firstName', 'lastName', 'nip', 'address', 'businessStartDate'],
-    optionalFields: ['companyName', 'regon', 'pkd']
+    optionalFields: ['companyName', 'regon', 'pkd'],
   },
   'VAT-UE': {
     type: 'VAT-UE',
@@ -160,9 +164,9 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'medium',
     category: 'vat',
     requiredFields: ['firstName', 'lastName', 'nip', 'nipUE'],
-    optionalFields: ['companyName', 'regon']
+    optionalFields: ['companyName', 'regon'],
   },
-  
+
   // CIT forms
   'CIT-8': {
     type: 'CIT-8',
@@ -171,9 +175,9 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'complex',
     category: 'cit',
     requiredFields: ['companyName', 'nip', 'regon', 'krs', 'address'],
-    optionalFields: ['taxOffice', 'bankAccount', 'email']
+    optionalFields: ['taxOffice', 'bankAccount', 'email'],
   },
-  
+
   // ZUS forms
   'ZUS-DRA': {
     type: 'ZUS-DRA',
@@ -182,7 +186,7 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'medium',
     category: 'zus',
     requiredFields: ['firstName', 'lastName', 'nip'],
-    optionalFields: ['companyName', 'regon', 'zusCode']
+    optionalFields: ['companyName', 'regon', 'zusCode'],
   },
   'ZUS-RCA': {
     type: 'ZUS-RCA',
@@ -191,7 +195,7 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'medium',
     category: 'zus',
     requiredFields: ['firstName', 'lastName', 'nip', 'pesel'],
-    optionalFields: ['companyName', 'zusCode']
+    optionalFields: ['companyName', 'zusCode'],
   },
   'ZUS-ZWUA': {
     type: 'ZUS-ZWUA',
@@ -200,7 +204,7 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'simple',
     category: 'zus',
     requiredFields: ['firstName', 'lastName', 'pesel', 'nip'],
-    optionalFields: ['companyName', 'address']
+    optionalFields: ['companyName', 'address'],
   },
   'ZUS-RMUA': {
     type: 'ZUS-RMUA',
@@ -209,45 +213,45 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'simple',
     category: 'zus',
     requiredFields: ['firstName', 'lastName', 'pesel', 'nip'],
-    optionalFields: ['companyName', 'newAddress']
+    optionalFields: ['companyName', 'newAddress'],
   },
-  
+
   // JPK files
-  'JPK_VAT': {
+  JPK_VAT: {
     type: 'JPK_VAT',
     name: 'JPK_VAT',
     description: 'Jednolity Plik Kontrolny VAT',
     complexity: 'complex',
     category: 'jpk',
     requiredFields: ['companyName', 'nip', 'regon'],
-    optionalFields: ['email', 'period']
+    optionalFields: ['email', 'period'],
   },
-  'JPK_FA': {
+  JPK_FA: {
     type: 'JPK_FA',
     name: 'JPK_FA',
     description: 'Jednolity Plik Kontrolny Faktura',
     complexity: 'complex',
     category: 'jpk',
     requiredFields: ['companyName', 'nip'],
-    optionalFields: ['regon', 'period']
+    optionalFields: ['regon', 'period'],
   },
-  'JPK_KR': {
+  JPK_KR: {
     type: 'JPK_KR',
     name: 'JPK_KR',
     description: 'Jednolity Plik Kontrolny Księgi Rachunkowe',
     complexity: 'complex',
     category: 'jpk',
     requiredFields: ['companyName', 'nip', 'krs'],
-    optionalFields: ['regon', 'period']
-  }
+    optionalFields: ['regon', 'period'],
+  },
 };
 
 export function getFormsByCategory(category: FormCategory): FormMetadata[] {
-  return Object.values(FORM_METADATA).filter(form => form.category === category);
+  return Object.values(FORM_METADATA).filter((form) => form.category === category);
 }
 
 export function getFormsByComplexity(complexity: FormComplexity): FormMetadata[] {
-  return Object.values(FORM_METADATA).filter(form => form.complexity === complexity);
+  return Object.values(FORM_METADATA).filter((form) => form.complexity === complexity);
 }
 
 export class AuthorizationFormGenerator {
@@ -255,7 +259,10 @@ export class AuthorizationFormGenerator {
     // Template-based PDF filling only - no programmatic generation
   }
 
-  async generateForm(data: AuthorizationFormData, keepFieldsEditable: boolean = false): Promise<Blob> {
+  async generateForm(
+    data: AuthorizationFormData,
+    keepFieldsEditable: boolean = false
+  ): Promise<Blob> {
     // Special handling for UPL-1 - use official PDF template with pdf-lib ONLY
     if (data.formType === 'UPL-1') {
       return await this.generateUPL1FormFromTemplate(data, keepFieldsEditable);
@@ -268,10 +275,20 @@ export class AuthorizationFormGenerator {
 
     // Use template-based filling for all forms that have templates
     const templateForms = [
-      'PIT-37', 'PIT-R', 'ZAW-FA',
-      'PIT-2', 'PIT-OP', 'IFT-1', 'UPL-1P',
-      'OPD-1', 'OPL-1', 'OPO-1', 'OPS-1',
-      'PPD-1', 'PPO-1', 'PPS-1'
+      'PIT-37',
+      'PIT-R',
+      'ZAW-FA',
+      'PIT-2',
+      'PIT-OP',
+      'IFT-1',
+      'UPL-1P',
+      'OPD-1',
+      'OPL-1',
+      'OPO-1',
+      'OPS-1',
+      'PPD-1',
+      'PPO-1',
+      'PPS-1',
     ];
     if (templateForms.includes(data.formType)) {
       return await this.generateFormFromTemplate(data);
@@ -280,15 +297,18 @@ export class AuthorizationFormGenerator {
     // For forms without templates, throw an error
     throw new Error(
       `Form type ${data.formType} requires an official PDF template.\n\n` +
-      `Please add the official ${data.formType} PDF template to: /public/pdf-templates/${data.formType}/\n` +
-      `Download the official template from the appropriate government website and place it in the correct directory.`
+        `Please add the official ${data.formType} PDF template to: /public/pdf-templates/${data.formType}/\n` +
+        `Download the official template from the appropriate government website and place it in the correct directory.`
     );
   }
 
-  async downloadForm(data: AuthorizationFormData): Promise<void> {
-    const blob = await this.generateForm(data);
+  async downloadForm(
+    data: AuthorizationFormData,
+    keepFieldsEditable: boolean = false
+  ): Promise<void> {
+    const blob = await this.generateForm(data, keepFieldsEditable);
     const fileName = `${data.formType}_${data.client.lastName}_${data.client.firstName}_${new Date().toISOString().split('T')[0]}.pdf`;
-    
+
     // Create download link
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -304,16 +324,18 @@ export class AuthorizationFormGenerator {
    * Form fields will be kept editable so users can fill remaining fields
    * @returns Object with the blob URL and cleanup function
    */
-  async generateFormBlobUrl(data: AuthorizationFormData): Promise<{ url: string; fileName: string; cleanup: () => void }> {
+  async generateFormBlobUrl(
+    data: AuthorizationFormData
+  ): Promise<{ url: string; fileName: string; cleanup: () => void }> {
     // Generate with keepFieldsEditable = true for preview
     const blob = await this.generateForm(data, true);
     const fileName = `${data.formType}_${data.client.lastName}_${data.client.firstName}_${new Date().toISOString().split('T')[0]}.pdf`;
     const url = URL.createObjectURL(blob);
-    
+
     return {
       url,
       fileName,
-      cleanup: () => URL.revokeObjectURL(url)
+      cleanup: () => URL.revokeObjectURL(url),
     };
   }
 
@@ -321,24 +343,30 @@ export class AuthorizationFormGenerator {
    * Generate UPL-1 form using official PDF template and pdf-lib
    * Template-based approach ONLY - no fallback to programmatic generation
    */
-  private async generateUPL1FormFromTemplate(data: AuthorizationFormData, keepFieldsEditable: boolean = false): Promise<Blob> {
+  private async generateUPL1FormFromTemplate(
+    data: AuthorizationFormData,
+    keepFieldsEditable: boolean = false
+  ): Promise<Blob> {
     // Use pdf-lib with official template (template-based approach)
     const filler = new UPL1PdfFiller('/pdf-templates/UPL-1/2023/UPL-1_2023.pdf');
     try {
-      return await filler.fillFormAsBlob({
-        client: data.client,
-        employee: data.employee,
-        startDate: data.additionalData?.startDate,
-        endDate: data.additionalData?.endDate,
-        scope: data.additionalData?.scope,
-        taxOffice: data.additionalData?.taxOffice,
-      }, { keepFieldsEditable });
+      return await filler.fillFormAsBlob(
+        {
+          client: data.client,
+          employee: data.employee,
+          startDate: data.additionalData?.startDate,
+          endDate: data.additionalData?.endDate,
+          scope: data.additionalData?.scope,
+          taxOffice: data.additionalData?.taxOffice,
+        },
+        { keepFieldsEditable }
+      );
     } catch (error) {
       // Clear error message directing user to add the official PDF template
       throw new Error(
         `Failed to fill UPL-1 form template: ${error instanceof Error ? error.message : String(error)}\n\n` +
-        `Please ensure the official UPL-1 PDF template exists at: /public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf\n` +
-        `You can download the official template from the Polish Ministry of Finance website.`
+          `Please ensure the official UPL-1 PDF template exists at: /public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf\n` +
+          `You can download the official template from the Polish Ministry of Finance website.`
       );
     }
   }
@@ -350,11 +378,11 @@ export class AuthorizationFormGenerator {
   private async generateFormFromTemplate(data: AuthorizationFormData): Promise<Blob> {
     const { client, employee, additionalData, formType } = data;
     const year = additionalData?.year || new Date().getFullYear().toString();
-    
+
     let formData: any = {};
 
     // Prepare form data based on form type
-    switch(formType) {
+    switch (formType) {
       case 'PIT-37':
         formData = {
           taxpayerName: `${client.firstName} ${client.lastName}`,
@@ -490,4 +518,3 @@ export class AuthorizationFormGenerator {
     return await this.generateFormFromTemplate(data);
   }
 }
-

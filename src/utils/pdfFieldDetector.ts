@@ -697,8 +697,8 @@ export class PdfFieldDetector {
       if (result.data.words) {
         for (const word of result.data.words) {
           // Filter out very low confidence words
-          if (word.confidence > 40) {
-            // Lower threshold to catch more text
+          if (word.confidence > 30) {
+            // Lowered threshold from 40 to 30 to catch more text
             texts.push({
               text: word.text,
               x: word.bbox.x0 / 2, // Scale back from 2x rendering
@@ -1067,7 +1067,7 @@ export class PdfFieldDetector {
     structure?: FormStructure
   ): DetectedField[] {
     const fields: DetectedField[] = [];
-    const maxDistance = 150; // Increased maximum distance for better matching
+    const maxDistance = 200; // Increased maximum distance from 150px to 200px for better matching
     const matched = new Set<string>(); // Track matched rectangles
 
     // Filter rectangles to prefer field candidates
@@ -1082,7 +1082,7 @@ export class PdfFieldDetector {
       let bestMatch: { text: DetectedText; score: number; strategy: string } | null = null;
 
       for (const text of texts) {
-        if (text.confidence < 0.4) continue; // Filter very low confidence
+        if (text.confidence < 0.3) continue; // Filter very low confidence (lowered from 0.4 to 0.3)
 
         // Calculate multiple spatial relationships
         const distance = this.calculateDistance({ x: text.x, y: text.y }, { x: rect.x, y: rect.y });
@@ -1245,14 +1245,14 @@ export class PdfFieldDetector {
     // Strategy 1: Label above field (most common in Polish forms)
     const isAbove = text.y < rect.y && text.y > rect.y - maxDistance;
     const aboveScore = isAbove
-      ? 0.3 + (1 - Math.abs(text.x - rect.x) / 100) * 0.2 + (1 - distance / maxDistance) * 0.5
+      ? 0.35 + (1 - Math.abs(text.x - rect.x) / 100) * 0.25 + (1 - distance / maxDistance) * 0.4
       : 0;
 
     // Strategy 2: Label to the left of field
     const isLeft =
       text.x < rect.x && text.x > rect.x - maxDistance * 2 && Math.abs(text.y - rect.y) < 50;
     const leftScore = isLeft
-      ? 0.2 + (1 - Math.abs(text.y - rect.y) / 50) * 0.2 + (1 - distance / maxDistance) * 0.5
+      ? 0.25 + (1 - Math.abs(text.y - rect.y) / 50) * 0.25 + (1 - distance / maxDistance) * 0.4
       : 0;
 
     // Strategy 3: Label inside field box (e.g., checkboxes with labels)
@@ -1261,7 +1261,7 @@ export class PdfFieldDetector {
       text.x <= rect.x + rect.width &&
       text.y >= rect.y &&
       text.y <= rect.y + rect.height;
-    const insideScore = isInside ? 0.25 + text.confidence * 0.5 : 0;
+    const insideScore = isInside ? 0.3 + text.confidence * 0.5 : 0;
 
     // Strategy 4: Label in table header (above and within horizontal bounds)
     const isTableHeader =
@@ -1270,14 +1270,14 @@ export class PdfFieldDetector {
       text.x >= rect.x - 10 &&
       text.x <= rect.x + rect.width + 10;
     const tableHeaderScore = isTableHeader
-      ? 0.25 +
-        (1 - Math.abs(text.x + text.width / 2 - (rect.x + rect.width / 2)) / rect.width) * 0.3
+      ? 0.3 +
+        (1 - Math.abs(text.x + text.width / 2 - (rect.x + rect.width / 2)) / rect.width) * 0.35
       : 0;
 
     // Strategy 5: Nearby (general proximity)
     const isNearby = distance < maxDistance;
     const nearbyScore = isNearby
-      ? 0.15 + (1 - distance / maxDistance) * 0.3 + text.confidence * 0.2
+      ? 0.2 + (1 - distance / maxDistance) * 0.35 + text.confidence * 0.25
       : 0;
 
     // Find best strategy
@@ -1307,8 +1307,28 @@ export class PdfFieldDetector {
 
   /**
    * Generate a field name from label text
+   * Enhanced to preserve date type information and common field patterns
    */
   private generateFieldName(label: string): string {
+    const labelLower = label.toLowerCase();
+
+    // Detect specific date types and use semantic names
+    if (labelLower.includes('urodzeni') || labelLower.includes('ur.')) {
+      return 'data_urodzenia';
+    }
+    if (labelLower.includes('wystawien') || labelLower.includes('wyst.')) {
+      return 'data_wystawienia';
+    }
+    if (labelLower.includes('waznosc') || labelLower.includes('ważnosc')) {
+      return 'data_waznosci';
+    }
+    if (labelLower.includes('rozpocz') || labelLower.includes('od dnia')) {
+      return 'data_rozpoczecia';
+    }
+    if (labelLower.includes('zakonczeni') || labelLower.includes('do dnia')) {
+      return 'data_zakonczenia';
+    }
+
     // Remove Polish characters and special characters
     let name = label
       .toLowerCase()
@@ -1391,6 +1411,24 @@ export class PdfFieldDetector {
       kodPocztowy: ['kod pocztowy', 'kod', 'pocztowy'],
       telefon: ['telefon', 'tel.', 'tel', 'numer telefonu'],
       email: ['e-mail', 'email', 'adres e-mail'],
+      // Date field types - distinguish between different date types
+      dataUrodzenia: ['data urodzenia', 'urodzony', 'urodzona', 'data ur.', 'ur.'],
+      dataWystawienia: ['data wystawienia', 'wystawiony', 'wystawiono', 'data wyst.'],
+      dataWaznosci: ['data ważności', 'data waznosci', 'ważny', 'wazny', 'ważność', 'waznosc'],
+      dataRozpoczecia: [
+        'data rozpoczęcia',
+        'data rozpoczecia',
+        'rozpoczęcie',
+        'rozpoczecie',
+        'od dnia',
+      ],
+      dataZakonczenia: [
+        'data zakończenia',
+        'data zakonczenia',
+        'zakończenie',
+        'zakonczenie',
+        'do dnia',
+      ],
       data: ['data', 'date', 'dzień', 'dzien', 'miesiąc', 'miesiac', 'rok', 'r.'],
     };
 
@@ -1403,8 +1441,17 @@ export class PdfFieldDetector {
             return 'text';
           }
         }
-        // Date fields are typically small
-        if (fieldType === 'data') {
+        // Date fields are typically small - distinguish between date types
+        if (
+          [
+            'dataUrodzenia',
+            'dataWystawienia',
+            'dataWaznosci',
+            'dataRozpoczecia',
+            'dataZakonczenia',
+            'data',
+          ].includes(fieldType)
+        ) {
           if (rect.width < 150 && rect.height < 40) {
             return 'text';
           }

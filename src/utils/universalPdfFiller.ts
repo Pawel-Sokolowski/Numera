@@ -1,13 +1,22 @@
-import { PDFDocument, StandardFonts, rgb, PDFForm, PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown } from 'pdf-lib';
+import {
+  PDFDocument,
+  StandardFonts,
+  rgb,
+  PDFForm,
+  PDFTextField,
+  PDFCheckBox,
+  PDFRadioGroup,
+  PDFDropdown,
+} from 'pdf-lib';
 
 /**
  * Universal PDF Form Filler
- * 
+ *
  * Automatically fills ANY PDF form using:
  * 1. Acroform field detection (for interactive PDFs)
  * 2. Intelligent coordinate-based placement (for flat PDFs)
  * 3. Smart field matching and validation
- * 
+ *
  * Works with any Polish government form, business form, or custom PDF.
  */
 
@@ -148,7 +157,9 @@ export class UniversalPdfFiller {
           result.warnings.push(`Unknown field type for: ${fieldName}`);
         }
       } catch (error) {
-        result.errors.push(`Error filling field: ${error instanceof Error ? error.message : 'Unknown'}`);
+        result.errors.push(
+          `Error filling field: ${error instanceof Error ? error.message : 'Unknown'}`
+        );
         result.fieldsSkipped++;
       }
     }
@@ -156,6 +167,7 @@ export class UniversalPdfFiller {
 
   /**
    * Fill coordinate-based fields
+   * Supports multi-page forms by distributing fields across pages if coordinates specify page numbers
    */
   private async fillCoordinateBasedFields(
     pdfDoc: PDFDocument,
@@ -164,46 +176,96 @@ export class UniversalPdfFiller {
     result: FillingResult
   ): Promise<void> {
     const pages = pdfDoc.getPages();
-    const firstPage = pages[0];
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontSize = options.fontSize || 10;
     const color = options.fontColor || { r: 0, g: 0, b: 0 };
 
-    // Calculate smart positions
-    const positions = options.smartPositioning
-      ? this.calculateSmartPositions(firstPage.getHeight(), Object.keys(data).length)
-      : this.calculateBasicPositions(firstPage.getHeight(), Object.keys(data).length);
-
-    let positionIndex = 0;
     result.fieldsDetected = Object.keys(data).length;
 
-    for (const [key, value] of Object.entries(data)) {
-      try {
-        if (positionIndex >= positions.length) {
-          result.warnings.push(`No position available for field: ${key}`);
+    // Check if data contains coordinate information with page numbers
+    const hasCoordinates = Object.values(data).some(
+      (value) => typeof value === 'object' && value !== null && 'x' in value && 'y' in value
+    );
+
+    if (hasCoordinates) {
+      // Use provided coordinates with multi-page support
+      for (const [key, value] of Object.entries(data)) {
+        try {
+          if (typeof value === 'object' && value !== null && 'x' in value && 'y' in value) {
+            const coord = value as any;
+            const pageIndex = (coord.page || 1) - 1; // Default to page 1 if not specified
+
+            if (pageIndex < 0 || pageIndex >= pages.length) {
+              result.warnings.push(`Invalid page ${coord.page} for field: ${key}`);
+              result.fieldsSkipped++;
+              continue;
+            }
+
+            const page = pages[pageIndex];
+            let text = String(coord.value || coord.text || '');
+            if (options.sanitizePolishChars) {
+              text = this.sanitizeText(text);
+            }
+
+            page.drawText(text, {
+              x: coord.x,
+              y: coord.y,
+              size: fontSize,
+              font: font,
+              color: rgb(color.r, color.g, color.b),
+            });
+
+            result.fieldsFilled++;
+          } else {
+            result.warnings.push(`No coordinates for field: ${key}`);
+            result.fieldsSkipped++;
+          }
+        } catch (error) {
+          result.errors.push(
+            `Error filling field ${key}: ${error instanceof Error ? error.message : 'Unknown'}`
+          );
           result.fieldsSkipped++;
-          continue;
         }
+      }
+    } else {
+      // Fallback to smart positioning on first page
+      const firstPage = pages[0];
+      const positions = options.smartPositioning
+        ? this.calculateSmartPositions(firstPage.getHeight(), Object.keys(data).length)
+        : this.calculateBasicPositions(firstPage.getHeight(), Object.keys(data).length);
 
-        let text = String(value);
-        if (options.sanitizePolishChars) {
-          text = this.sanitizeText(text);
+      let positionIndex = 0;
+
+      for (const [key, value] of Object.entries(data)) {
+        try {
+          if (positionIndex >= positions.length) {
+            result.warnings.push(`No position available for field: ${key}`);
+            result.fieldsSkipped++;
+            continue;
+          }
+
+          let text = String(value);
+          if (options.sanitizePolishChars) {
+            text = this.sanitizeText(text);
+          }
+
+          const pos = positions[positionIndex];
+          firstPage.drawText(text, {
+            x: pos.x,
+            y: pos.y,
+            size: fontSize,
+            font: font,
+            color: rgb(color.r, color.g, color.b),
+          });
+
+          result.fieldsFilled++;
+          positionIndex++;
+        } catch (error) {
+          result.errors.push(
+            `Error drawing text for ${key}: ${error instanceof Error ? error.message : 'Unknown'}`
+          );
+          result.fieldsSkipped++;
         }
-
-        const pos = positions[positionIndex];
-        firstPage.drawText(text, {
-          x: pos.x,
-          y: pos.y,
-          size: fontSize,
-          font: font,
-          color: rgb(color.r, color.g, color.b),
-        });
-
-        result.fieldsFilled++;
-        positionIndex++;
-      } catch (error) {
-        result.errors.push(`Error drawing text for ${key}: ${error instanceof Error ? error.message : 'Unknown'}`);
-        result.fieldsSkipped++;
       }
     }
   }
@@ -213,15 +275,24 @@ export class UniversalPdfFiller {
    */
   private sanitizeText(text: string): string {
     const polishCharMap: Record<string, string> = {
-      'ą': 'a', 'Ą': 'A',
-      'ć': 'c', 'Ć': 'C',
-      'ę': 'e', 'Ę': 'E',
-      'ł': 'l', 'Ł': 'L',
-      'ń': 'n', 'Ń': 'N',
-      'ó': 'o', 'Ó': 'O',
-      'ś': 's', 'Ś': 'S',
-      'ź': 'z', 'Ź': 'Z',
-      'ż': 'z', 'Ż': 'Z',
+      ą: 'a',
+      Ą: 'A',
+      ć: 'c',
+      Ć: 'C',
+      ę: 'e',
+      Ę: 'E',
+      ł: 'l',
+      Ł: 'L',
+      ń: 'n',
+      Ń: 'N',
+      ó: 'o',
+      Ó: 'O',
+      ś: 's',
+      Ś: 'S',
+      ź: 'z',
+      Ź: 'Z',
+      ż: 'z',
+      Ż: 'Z',
     };
 
     let sanitized = text;
@@ -230,6 +301,7 @@ export class UniversalPdfFiller {
     }
 
     // Remove control characters
+    // eslint-disable-next-line no-control-regex
     return sanitized.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
   }
 
@@ -243,8 +315,15 @@ export class UniversalPdfFiller {
         .replace(/[_\-\s]/g, '')
         .replace(/[ąćęłńóśźż]/g, (char) => {
           const map: Record<string, string> = {
-            'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
-            'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
+            ą: 'a',
+            ć: 'c',
+            ę: 'e',
+            ł: 'l',
+            ń: 'n',
+            ó: 'o',
+            ś: 's',
+            ź: 'z',
+            ż: 'z',
           };
           return map[char] || char;
         });
@@ -272,7 +351,10 @@ export class UniversalPdfFiller {
   /**
    * Calculate smart field positions
    */
-  private calculateSmartPositions(pageHeight: number, fieldCount: number): Array<{ x: number; y: number }> {
+  private calculateSmartPositions(
+    pageHeight: number,
+    fieldCount: number
+  ): Array<{ x: number; y: number }> {
     const positions: Array<{ x: number; y: number }> = [];
     const leftMargin = 150;
     const rightMargin = 350;
@@ -284,7 +366,7 @@ export class UniversalPdfFiller {
     for (let i = 0; i < maxFieldsPerColumn && positions.length < fieldCount; i++) {
       positions.push({
         x: leftMargin,
-        y: topStart - (i * lineHeight),
+        y: topStart - i * lineHeight,
       });
     }
 
@@ -292,7 +374,7 @@ export class UniversalPdfFiller {
     for (let i = 0; i < maxFieldsPerColumn && positions.length < fieldCount; i++) {
       positions.push({
         x: rightMargin,
-        y: topStart - (i * lineHeight),
+        y: topStart - i * lineHeight,
       });
     }
 
@@ -302,7 +384,10 @@ export class UniversalPdfFiller {
   /**
    * Calculate basic positions (single column)
    */
-  private calculateBasicPositions(pageHeight: number, fieldCount: number): Array<{ x: number; y: number }> {
+  private calculateBasicPositions(
+    pageHeight: number,
+    fieldCount: number
+  ): Array<{ x: number; y: number }> {
     const positions: Array<{ x: number; y: number }> = [];
     const leftMargin = 150;
     const topStart = pageHeight - 150;
@@ -311,7 +396,7 @@ export class UniversalPdfFiller {
     for (let i = 0; i < fieldCount; i++) {
       positions.push({
         x: leftMargin,
-        y: topStart - (i * lineHeight),
+        y: topStart - i * lineHeight,
       });
     }
 
@@ -342,7 +427,7 @@ export class UniversalPdfFiller {
       },
       hasAcroform: fields.length > 0,
       fieldCount: fields.length,
-      fields: fields.map(field => ({
+      fields: fields.map((field) => ({
         name: field.getName(),
         type: field.constructor.name,
       })),

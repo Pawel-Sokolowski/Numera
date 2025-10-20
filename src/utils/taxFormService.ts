@@ -2,7 +2,7 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 /**
  * Tax Form Service
- * 
+ *
  * Handles loading and filling of tax form PDF templates with field mappings.
  * Supports version-specific forms and form-specific calculations.
  */
@@ -37,13 +37,13 @@ export class TaxFormService {
   async fillForm(formType: string, year: string, formData: TaxFormData): Promise<Uint8Array> {
     // Load the correct PDF template based on type and year
     const pdfTemplate = await this.loadPdfTemplate(formType, year);
-    
+
     // Load the field mappings
     const mappings = await this.loadMappings(formType, year);
-    
+
     // Process special calculations (like tax deductions for children)
     const processedData = this.processFormSpecificCalculations(formType, formData, mappings);
-    
+
     // Fill the form
     return await this.fillPdfForm(pdfTemplate, processedData, mappings);
   }
@@ -54,10 +54,10 @@ export class TaxFormService {
   private async loadPdfTemplate(formType: string, year: string): Promise<PDFDocument> {
     // Load from public directory (static assets)
     const publicPath = `/pdf-templates/${formType}/${year}/${formType}_${year}.pdf`;
-    
+
     // Fallback to root public directory for backward compatibility (UPL-1)
     const fallbackPath = formType === 'UPL-1' ? '/upl-1_06-08-2.pdf' : null;
-    
+
     try {
       // Try to fetch from pdf-templates directory
       const response = await fetch(publicPath);
@@ -106,25 +106,25 @@ export class TaxFormService {
    */
   async loadMappings(formType: string, year?: string): Promise<FormMapping> {
     const cacheKey = `${formType}-${year || 'default'}`;
-    
+
     // Check cache first
     if (this.mappingCache.has(cacheKey)) {
       return this.mappingCache.get(cacheKey)!;
     }
 
     const mappingPath = `/pdf-templates/${formType}/mapping.json`;
-    
+
     try {
       const response = await fetch(mappingPath);
       if (!response.ok) {
         throw new Error(`Mapping file not found: ${mappingPath}`);
       }
-      
+
       const mapping: FormMapping = await response.json();
-      
+
       // Cache the mapping
       this.mappingCache.set(cacheKey, mapping);
-      
+
       return mapping;
     } catch (error) {
       console.error(`Error loading mappings for ${formType}:`, error);
@@ -136,8 +136,8 @@ export class TaxFormService {
    * Process form-specific calculations
    */
   private processFormSpecificCalculations(
-    formType: string, 
-    data: TaxFormData, 
+    formType: string,
+    data: TaxFormData,
     mappings: FormMapping
   ): TaxFormData {
     const processedData = { ...data };
@@ -159,7 +159,10 @@ export class TaxFormService {
   /**
    * Process PIT-37 specific calculations
    */
-  private processPIT37Calculations(data: TaxFormData, mappings: FormMapping): Record<string, number> {
+  private processPIT37Calculations(
+    data: TaxFormData,
+    mappings: FormMapping
+  ): Record<string, number> {
     const calculated: Record<string, number> = {};
 
     // Calculate total income
@@ -193,7 +196,10 @@ export class TaxFormService {
   /**
    * Process PIT-R specific calculations (for business income)
    */
-  private processPITRCalculations(data: TaxFormData, mappings: FormMapping): Record<string, number> {
+  private processPITRCalculations(
+    data: TaxFormData,
+    mappings: FormMapping
+  ): Record<string, number> {
     const calculated: Record<string, number> = {};
 
     // Calculate tax base (income - costs)
@@ -216,6 +222,7 @@ export class TaxFormService {
 
   /**
    * Fill PDF form using mappings and processed data
+   * Supports multi-page forms by respecting page numbers in field mappings
    */
   private async fillPdfForm(
     pdfDoc: PDFDocument,
@@ -229,21 +236,24 @@ export class TaxFormService {
     // Merge calculated fields with input data
     const allData = {
       ...data,
-      ...(data.calculatedFields || {})
+      ...(data.calculatedFields || {}),
     };
 
     // Iterate through field mappings and fill the form
+    // Multi-page support: Each field mapping specifies its page number
     for (const [fieldName, fieldMapping] of Object.entries(mappings.fields)) {
       const value = allData[fieldName];
-      
+
       if (value !== undefined && value !== null) {
-        const pageIndex = fieldMapping.page - 1; // Convert to 0-based index
-        
+        // Field mapping page is 1-based, convert to 0-based index
+        const pageIndex = fieldMapping.page - 1;
+
         if (pageIndex < 0 || pageIndex >= pages.length) {
           console.warn(`Invalid page index ${fieldMapping.page} for field ${fieldName}`);
           continue;
         }
 
+        // Get the correct page for this field
         const page = pages[pageIndex];
         const textValue = this.formatFieldValue(value);
 
@@ -291,12 +301,26 @@ export class TaxFormService {
    */
   private sanitizeText(text: string): string {
     const polishMap: Record<string, string> = {
-      'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
-      'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
-      'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N',
-      'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z'
+      ą: 'a',
+      ć: 'c',
+      ę: 'e',
+      ł: 'l',
+      ń: 'n',
+      ó: 'o',
+      ś: 's',
+      ź: 'z',
+      ż: 'z',
+      Ą: 'A',
+      Ć: 'C',
+      Ę: 'E',
+      Ł: 'L',
+      Ń: 'N',
+      Ó: 'O',
+      Ś: 'S',
+      Ź: 'Z',
+      Ż: 'Z',
     };
 
-    return text.replace(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, char => polishMap[char] || char);
+    return text.replace(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, (char) => polishMap[char] || char);
   }
 }
