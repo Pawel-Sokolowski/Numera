@@ -757,7 +757,7 @@ export function EnhancedInvoiceManager({ clients }: EnhancedInvoiceManagerProps)
 
       {/* Dialog nowej faktury */}
       <Dialog open={isNewInvoiceDialogOpen} onOpenChange={setIsNewInvoiceDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-[75vw] w-[75vw]">
           <DialogHeader>
             <DialogTitle>Nowa faktura</DialogTitle>
             <DialogDescription>
@@ -965,7 +965,7 @@ export function EnhancedInvoiceManager({ clients }: EnhancedInvoiceManagerProps)
 
       {/* Dialog podglądu faktury */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-[75vw] w-[75vw]">
           <DialogHeader>
             <DialogTitle>Podgląd faktury</DialogTitle>
             <DialogDescription>

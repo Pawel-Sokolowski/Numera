@@ -250,7 +250,7 @@ export function EmailTemplates() {
 
       {/* Create/Edit Template Dialog */}
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[75vw] w-[75vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {isEditing ? 'Edytuj szablon' : 'Utwórz nowy szablon'}
@@ -358,7 +358,7 @@ export function EmailTemplates() {
 
       {/* Preview Template Dialog */}
       <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[75vw] w-[75vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />

@@ -320,7 +320,7 @@ export function AutomaticInvoicing({ clients }: AutomaticInvoicingProps) {
 
       {/* Edit Client Auto-Invoicing Dialog */}
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-[75vw] w-[75vw]">
           <DialogHeader>
             <DialogTitle>
               Ustawienia automatycznego fakturowania - {selectedClient && getClientDisplayName(selectedClient)}

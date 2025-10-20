@@ -69,6 +69,22 @@ export class TaxFormService {
       console.log(`Template not found: ${publicPath}`);
     }
 
+    // Try fallback to most recent available year (2023 is common fallback)
+    if (year !== '2023') {
+      try {
+        const fallbackYearPath = `/pdf-templates/${formType}/2023/${formType}_2023.pdf`;
+        console.log(`Trying fallback year 2023: ${fallbackYearPath}`);
+        const response = await fetch(fallbackYearPath);
+        if (response.ok) {
+          console.warn(`Using 2023 template as fallback for ${formType} ${year}`);
+          const arrayBuffer = await response.arrayBuffer();
+          return await PDFDocument.load(arrayBuffer);
+        }
+      } catch (error) {
+        console.log(`Fallback template not found: ${formType} 2023`);
+      }
+    }
+
     // Try fallback path for backward compatibility
     if (fallbackPath) {
       try {

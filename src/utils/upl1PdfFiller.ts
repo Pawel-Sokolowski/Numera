@@ -358,10 +358,31 @@ export class UPL1PdfFiller {
           }
         }
 
+        // Handle text fields
         if (value && field.constructor.name === 'PDFTextField') {
           const sanitizedValue = this.sanitizeText(value);
           field.setText(sanitizedValue);
           filledCount++;
+        }
+        // Handle checkbox fields
+        else if (field.constructor.name === 'PDFCheckBox') {
+          // Check if the field name suggests it should be checked
+          // For example, if we have a scope selection checkbox
+          if (value === 'true' || value === '1' || value === 'X' || value === 'x') {
+            field.check();
+            filledCount++;
+          }
+        }
+        // Handle radio groups
+        else if (field.constructor.name === 'PDFRadioGroup') {
+          if (value) {
+            try {
+              field.select(value);
+              filledCount++;
+            } catch (error) {
+              console.warn(`Could not select radio option for ${field.getName()}: ${value}`);
+            }
+          }
         }
       } catch (error) {
         console.warn(`Could not fill field ${field.getName()}:`, error);
@@ -374,6 +395,20 @@ export class UPL1PdfFiller {
     // Save without flattening
     const pdfBytes = await pdfDoc.save({ useObjectStreams: false });
     return pdfBytes;
+  }
+
+  /**
+   * Draw an X mark or checkmark at specified coordinates
+   * Used for checkbox fields when doing coordinate-based filling
+   */
+  private drawCheckmark(page: any, x: number, y: number, size: number = 10) {
+    // Draw an X mark
+    page.drawText('X', {
+      x,
+      y,
+      size,
+      color: rgb(0, 0, 0),
+    });
   }
 
   /**

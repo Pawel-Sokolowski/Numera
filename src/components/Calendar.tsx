@@ -186,7 +186,7 @@ export function Calendar() {
               Nowe Wydarzenie
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-[75vw] w-[75vw]">
             <DialogHeader>
               <DialogTitle>Dodaj nowe wydarzenie</DialogTitle>
               <DialogDescription>

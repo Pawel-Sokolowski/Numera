@@ -84,6 +84,7 @@ export function Chat() {
   };
 
   return (
+    <>
     <div className="flex h-[calc(100vh-8rem)] gap-6">
       {/* Sidebar - Channels and Users */}
       <div className="w-64 space-y-4">
@@ -215,7 +216,7 @@ export function Chat() {
 
     {/* Chat Settings Dialog */}
     <Dialog open={showSettings} onOpenChange={setShowSettings}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-[75vw] w-[75vw]">
         <DialogHeader>
           <DialogTitle>Ustawienia chatu</DialogTitle>
           <DialogDescription>
@@ -295,5 +296,6 @@ export function Chat() {
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

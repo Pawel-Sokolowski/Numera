@@ -389,7 +389,7 @@ export function PaymentTrackingPanel({ clients }: PaymentTrackingPanelProps) {
                 Dodaj płatność
               </Button>
             </DialogTrigger>
-          <DialogContent>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>Dodaj nową płatność</DialogTitle>
               <DialogDescription>
@@ -458,8 +458,9 @@ export function PaymentTrackingPanel({ clients }: PaymentTrackingPanelProps) {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Period selector and filters */}
