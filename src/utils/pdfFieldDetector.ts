@@ -3,25 +3,25 @@ import Tesseract from 'tesseract.js';
 
 /**
  * PDF Field Detector
- * 
+ *
  * Automatically detects form fields in PDF documents using:
  * - PDF.js for rendering PDF pages as images
  * - Tesseract.js for OCR text detection
  * - Image processing for rectangle/box detection
- * 
+ *
  * This service analyzes PDF forms to automatically generate field mappings
  * without manual coordinate entry.
  */
 
 export interface DetectedField {
-  name: string;           // Generated field name
-  label: string;          // Detected label text
-  x: number;              // X coordinate (from left)
-  y: number;              // Y coordinate (from bottom)
-  width: number;          // Field width
-  height: number;         // Field height
-  page: number;           // Page number (1-based)
-  confidence: number;     // Detection confidence (0-1)
+  name: string; // Generated field name
+  label: string; // Detected label text
+  x: number; // X coordinate (from left)
+  y: number; // Y coordinate (from bottom)
+  width: number; // Field width
+  height: number; // Field height
+  page: number; // Page number (1-based)
+  confidence: number; // Detection confidence (0-1)
   type: 'text' | 'checkbox' | 'signature'; // Field type
 }
 
@@ -71,7 +71,7 @@ export class PdfFieldDetector {
       // Load the PDF document
       const loadingTask = pdfjsLib.getDocument({ data: pdfFile });
       const pdf = await loadingTask.promise;
-      
+
       const pageCount = pdf.numPages;
       const allFields: DetectedField[] = [];
       const allRectangles: DetectedRectangle[] = [];
@@ -82,13 +82,13 @@ export class PdfFieldDetector {
       for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
         const page = await pdf.getPage(pageNum);
         const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better detection
-        
+
         pageSize = { width: viewport.width / 2, height: viewport.height / 2 };
 
         // Render page to canvas
         const canvas = this.createCanvas(viewport.width, viewport.height);
         const context = canvas.getContext('2d');
-        
+
         if (!context) {
           console.warn(`Could not get canvas context for page ${pageNum}`);
           continue;
@@ -96,7 +96,7 @@ export class PdfFieldDetector {
 
         await page.render({
           canvasContext: context,
-          viewport: viewport
+          viewport: viewport,
         }).promise;
 
         // Detect rectangles (form field boxes)
@@ -117,18 +117,21 @@ export class PdfFieldDetector {
         rectangles: allRectangles,
         texts: allTexts,
         pageCount,
-        pageSize
+        pageSize,
       };
     } catch (error) {
       console.error('Error detecting PDF fields:', error);
-      throw new Error('Failed to detect PDF fields: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      throw new Error(
+        'Failed to detect PDF fields: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
     }
   }
 
   /**
    * Create a canvas element (works in both browser and Node.js with canvas package)
    */
-  private createCanvas(width: number, height: number): HTMLCanvasElement {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private createCanvas(width: number, height: number): any {
     if (typeof document !== 'undefined') {
       const canvas = document.createElement('canvas');
       canvas.width = width;
@@ -143,18 +146,20 @@ export class PdfFieldDetector {
 
   /**
    * Detect rectangles in the rendered PDF page
-   * Uses edge detection and contour finding
+   * Uses enhanced edge detection, morphological operations, and improved contour finding
    */
-  private async detectRectangles(canvas: HTMLCanvasElement, pageNum: number): Promise<DetectedRectangle[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async detectRectangles(canvas: any, pageNum: number): Promise<DetectedRectangle[]> {
     const context = canvas.getContext('2d');
     if (!context) return [];
 
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
     const rectangles: DetectedRectangle[] = [];
 
-    // Simple rectangle detection based on horizontal and vertical lines
+    // Enhanced detection pipeline
     const edges = this.detectEdges(imageData);
-    const detectedRects = this.findRectangles(edges, canvas.width, canvas.height);
+    const cleaned = this.morphologicalClose(edges, canvas.width, canvas.height);
+    const detectedRects = this.findRectangles(cleaned, canvas.width, canvas.height);
 
     for (const rect of detectedRects) {
       rectangles.push({
@@ -162,7 +167,7 @@ export class PdfFieldDetector {
         y: rect.y / 2,
         width: rect.width / 2,
         height: rect.height / 2,
-        page: pageNum
+        page: pageNum,
       });
     }
 
@@ -170,38 +175,52 @@ export class PdfFieldDetector {
   }
 
   /**
-   * Simple edge detection algorithm
+   * Enhanced edge detection using Sobel operator with improved gradient calculation
    */
-  private detectEdges(imageData: ImageData): Uint8ClampedArray {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private detectEdges(imageData: any): Uint8ClampedArray {
     const width = imageData.width;
     const height = imageData.height;
     const data = imageData.data;
+    const grayscale = new Uint8ClampedArray(width * height);
     const edges = new Uint8ClampedArray(width * height);
 
-    // Convert to grayscale and detect edges
+    // Step 1: Convert to grayscale with proper luminance weighting
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        // Use proper luminance formula for better grayscale conversion
+        grayscale[y * width + x] = Math.round(
+          0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]
+        );
+      }
+    }
+
+    // Step 2: Apply enhanced Sobel operator with 3x3 kernel
+    // Sobel X kernel:  [-1  0  1]    Sobel Y kernel:  [-1 -2 -1]
+    //                  [-2  0  2]                     [ 0  0  0]
+    //                  [-1  0  1]                     [ 1  2  1]
     for (let y = 1; y < height - 1; y++) {
       for (let x = 1; x < width - 1; x++) {
-        const idx = (y * width + x) * 4;
-        
-        // Convert to grayscale
-        const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-        
-        // Simple edge detection (Sobel-like)
-        const idx_up = ((y - 1) * width + x) * 4;
-        const idx_down = ((y + 1) * width + x) * 4;
-        const idx_left = (y * width + (x - 1)) * 4;
-        const idx_right = (y * width + (x + 1)) * 4;
-        
-        const gray_up = (data[idx_up] + data[idx_up + 1] + data[idx_up + 2]) / 3;
-        const gray_down = (data[idx_down] + data[idx_down + 1] + data[idx_down + 2]) / 3;
-        const gray_left = (data[idx_left] + data[idx_left + 1] + data[idx_left + 2]) / 3;
-        const gray_right = (data[idx_right] + data[idx_right + 1] + data[idx_right + 2]) / 3;
-        
-        const dx = Math.abs(gray_right - gray_left);
-        const dy = Math.abs(gray_down - gray_up);
-        const gradient = Math.sqrt(dx * dx + dy * dy);
-        
-        edges[y * width + x] = gradient > 50 ? 255 : 0;
+        // Get 3x3 neighborhood
+        const p00 = grayscale[(y - 1) * width + (x - 1)];
+        const p01 = grayscale[(y - 1) * width + x];
+        const p02 = grayscale[(y - 1) * width + (x + 1)];
+        const p10 = grayscale[y * width + (x - 1)];
+        const p12 = grayscale[y * width + (x + 1)];
+        const p20 = grayscale[(y + 1) * width + (x - 1)];
+        const p21 = grayscale[(y + 1) * width + x];
+        const p22 = grayscale[(y + 1) * width + (x + 1)];
+
+        // Apply Sobel kernels
+        const gx = -p00 + p02 - 2 * p10 + 2 * p12 - p20 + p22;
+        const gy = -p00 - 2 * p01 - p02 + p20 + 2 * p21 + p22;
+
+        // Calculate gradient magnitude
+        const gradient = Math.sqrt(gx * gx + gy * gy);
+
+        // Adaptive thresholding - lower threshold for better detection
+        edges[y * width + x] = gradient > 40 ? 255 : 0;
       }
     }
 
@@ -209,57 +228,124 @@ export class PdfFieldDetector {
   }
 
   /**
-   * Find rectangles from edge data
+   * Apply morphological operations to reduce noise and enhance edges
    */
-  private findRectangles(edges: Uint8ClampedArray, width: number, height: number): DetectedRectangle[] {
-    const rectangles: DetectedRectangle[] = [];
-    const minWidth = 50; // Minimum width for a field
-    const minHeight = 15; // Minimum height for a field
-    const maxWidth = width * 0.8; // Maximum 80% of page width
-    const maxHeight = 100; // Maximum height
+  private morphologicalClose(
+    edges: Uint8ClampedArray,
+    width: number,
+    height: number
+  ): Uint8ClampedArray {
+    const result = new Uint8ClampedArray(width * height);
+    const kernelSize = 3;
+    const halfKernel = Math.floor(kernelSize / 2);
 
-    // Simple approach: scan for rectangular regions with strong edges
-    for (let y = 0; y < height - minHeight; y += 10) {
-      for (let x = 0; x < width - minWidth; x += 10) {
+    // Dilation followed by erosion (closing operation)
+    // This helps connect nearby edges and fill small gaps
+    const dilated = new Uint8ClampedArray(width * height);
+
+    // Dilation
+    for (let y = halfKernel; y < height - halfKernel; y++) {
+      for (let x = halfKernel; x < width - halfKernel; x++) {
+        let maxVal = 0;
+        for (let ky = -halfKernel; ky <= halfKernel; ky++) {
+          for (let kx = -halfKernel; kx <= halfKernel; kx++) {
+            const val = edges[(y + ky) * width + (x + kx)];
+            if (val > maxVal) maxVal = val;
+          }
+        }
+        dilated[y * width + x] = maxVal;
+      }
+    }
+
+    // Erosion
+    for (let y = halfKernel; y < height - halfKernel; y++) {
+      for (let x = halfKernel; x < width - halfKernel; x++) {
+        let minVal = 255;
+        for (let ky = -halfKernel; ky <= halfKernel; ky++) {
+          for (let kx = -halfKernel; kx <= halfKernel; kx++) {
+            const val = dilated[(y + ky) * width + (x + kx)];
+            if (val < minVal) minVal = val;
+          }
+        }
+        result[y * width + x] = minVal;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Find rectangles from edge data with improved heuristics
+   */
+  private findRectangles(
+    edges: Uint8ClampedArray,
+    width: number,
+    height: number
+  ): DetectedRectangle[] {
+    const rectangles: DetectedRectangle[] = [];
+    const minWidth = 40; // Reduced minimum width for better detection
+    const minHeight = 12; // Reduced minimum height for better detection
+    const maxWidth = width * 0.85; // Slightly increased maximum
+    const maxHeight = 120; // Increased for larger fields
+    const scanStep = 5; // Finer scanning for better precision
+
+    // Enhanced approach: scan with finer granularity and better validation
+    for (let y = 0; y < height - minHeight; y += scanStep) {
+      for (let x = 0; x < width - minWidth; x += scanStep) {
         // Check if this could be the top-left corner of a rectangle
-        if (this.hasHorizontalLine(edges, width, x, y, minWidth) &&
-            this.hasVerticalLine(edges, width, height, x, y, minHeight)) {
-          
-          // Try to find the bottom-right corner
+        if (
+          this.hasHorizontalLine(edges, width, x, y, minWidth) &&
+          this.hasVerticalLine(edges, width, height, x, y, minHeight)
+        ) {
+          // Try to find the bottom-right corner with adaptive extension
           let rectWidth = minWidth;
           let rectHeight = minHeight;
-          
-          // Extend width
-          while (x + rectWidth < width && rectWidth < maxWidth &&
-                 this.hasVerticalLine(edges, width, height, x + rectWidth, y, minHeight)) {
-            rectWidth += 10;
+
+          // Extend width with better boundary detection
+          while (x + rectWidth < width && rectWidth < maxWidth) {
+            if (this.hasVerticalLine(edges, width, height, x + rectWidth, y, minHeight)) {
+              rectWidth += scanStep;
+            } else {
+              break;
+            }
           }
-          
-          // Extend height
-          while (y + rectHeight < height && rectHeight < maxHeight &&
-                 this.hasHorizontalLine(edges, width, x, y + rectHeight, rectWidth)) {
-            rectHeight += 10;
+
+          // Extend height with better boundary detection
+          while (y + rectHeight < height && rectHeight < maxHeight) {
+            if (this.hasHorizontalLine(edges, width, x, y + rectHeight, rectWidth)) {
+              rectHeight += scanStep;
+            } else {
+              break;
+            }
           }
-          
-          // Only add if it looks like a form field
-          if (rectWidth >= minWidth && rectWidth <= maxWidth &&
-              rectHeight >= minHeight && rectHeight <= maxHeight) {
-            
-            // Check if this rectangle overlaps with existing ones
-            const overlaps = rectangles.some(existing => 
+
+          // Validate rectangle dimensions and aspect ratio
+          const aspectRatio = rectWidth / rectHeight;
+          const isValidField =
+            rectWidth >= minWidth &&
+            rectWidth <= maxWidth &&
+            rectHeight >= minHeight &&
+            rectHeight <= maxHeight &&
+            aspectRatio >= 0.5 &&
+            aspectRatio <= 50; // Reasonable aspect ratios
+
+          if (isValidField) {
+            // Check if this rectangle overlaps significantly with existing ones
+            const overlaps = rectangles.some((existing) =>
               this.rectanglesOverlap(
                 { x, y, width: rectWidth, height: rectHeight },
-                existing
+                existing,
+                0.5 // 50% overlap threshold
               )
             );
-            
+
             if (!overlaps) {
               rectangles.push({
                 x,
                 y,
                 width: rectWidth,
                 height: rectHeight,
-                page: 1 // Will be set by caller
+                page: 1, // Will be set by caller
               });
             }
           }
@@ -267,78 +353,216 @@ export class PdfFieldDetector {
       }
     }
 
-    return rectangles;
+    // Post-processing: merge nearby rectangles that likely belong to the same field
+    return this.mergeNearbyRectangles(rectangles);
   }
 
   /**
-   * Check if there's a horizontal line at the given position
+   * Check if there's a horizontal line at the given position with improved detection
    */
-  private hasHorizontalLine(edges: Uint8ClampedArray, width: number, x: number, y: number, length: number): boolean {
+  private hasHorizontalLine(
+    edges: Uint8ClampedArray,
+    width: number,
+    x: number,
+    y: number,
+    length: number
+  ): boolean {
     let edgeCount = 0;
-    const threshold = length * 0.3; // At least 30% should be edges
-    
+    const threshold = length * 0.25; // Reduced threshold for better detection (25%)
+    const tolerance = 2; // Allow slight vertical drift
+
     for (let i = 0; i < length && x + i < width; i++) {
-      if (edges[y * width + x + i] > 128) {
-        edgeCount++;
-      }
-    }
-    
-    return edgeCount >= threshold;
-  }
-
-  /**
-   * Check if there's a vertical line at the given position
-   */
-  private hasVerticalLine(edges: Uint8ClampedArray, width: number, height: number, x: number, y: number, length: number): boolean {
-    let edgeCount = 0;
-    const threshold = length * 0.3;
-    
-    for (let i = 0; i < length && y + i < height; i++) {
-      if (edges[(y + i) * width + x] > 128) {
-        edgeCount++;
-      }
-    }
-    
-    return edgeCount >= threshold;
-  }
-
-  /**
-   * Check if two rectangles overlap
-   */
-  private rectanglesOverlap(rect1: { x: number; y: number; width: number; height: number }, 
-                           rect2: { x: number; y: number; width: number; height: number }): boolean {
-    return !(rect1.x + rect1.width < rect2.x || 
-             rect2.x + rect2.width < rect1.x ||
-             rect1.y + rect1.height < rect2.y ||
-             rect2.y + rect2.height < rect1.y);
-  }
-
-  /**
-   * Perform OCR on the canvas to detect text
-   */
-  private async detectTextWithOCR(canvas: HTMLCanvasElement, pageNum: number): Promise<DetectedText[]> {
-    try {
-      const result = await Tesseract.recognize(canvas, 'pol', {
-        logger: m => {
-          // Optional: log progress
-          if (m.status === 'recognizing text') {
-            console.log(`OCR Progress (Page ${pageNum}): ${Math.round(m.progress * 100)}%`);
+      // Check a small vertical range to account for line thickness
+      let hasEdgeInRange = false;
+      for (let dy = -tolerance; dy <= tolerance; dy++) {
+        const checkY = y + dy;
+        if (checkY >= 0 && checkY < edges.length / width) {
+          if (edges[checkY * width + x + i] > 128) {
+            hasEdgeInRange = true;
+            break;
           }
         }
+      }
+      if (hasEdgeInRange) {
+        edgeCount++;
+      }
+    }
+
+    return edgeCount >= threshold;
+  }
+
+  /**
+   * Check if there's a vertical line at the given position with improved detection
+   */
+  private hasVerticalLine(
+    edges: Uint8ClampedArray,
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+    length: number
+  ): boolean {
+    let edgeCount = 0;
+    const threshold = length * 0.25; // Reduced threshold for better detection (25%)
+    const tolerance = 2; // Allow slight horizontal drift
+
+    for (let i = 0; i < length && y + i < height; i++) {
+      // Check a small horizontal range to account for line thickness
+      let hasEdgeInRange = false;
+      for (let dx = -tolerance; dx <= tolerance; dx++) {
+        const checkX = x + dx;
+        if (checkX >= 0 && checkX < width) {
+          if (edges[(y + i) * width + checkX] > 128) {
+            hasEdgeInRange = true;
+            break;
+          }
+        }
+      }
+      if (hasEdgeInRange) {
+        edgeCount++;
+      }
+    }
+
+    return edgeCount >= threshold;
+  }
+
+  /**
+   * Check if two rectangles overlap with configurable threshold
+   */
+  private rectanglesOverlap(
+    rect1: { x: number; y: number; width: number; height: number },
+    rect2: { x: number; y: number; width: number; height: number },
+    threshold: number = 0.5
+  ): boolean {
+    // Calculate overlap area
+    const xOverlap = Math.max(
+      0,
+      Math.min(rect1.x + rect1.width, rect2.x + rect2.width) - Math.max(rect1.x, rect2.x)
+    );
+    const yOverlap = Math.max(
+      0,
+      Math.min(rect1.y + rect1.height, rect2.y + rect2.height) - Math.max(rect1.y, rect2.y)
+    );
+    const overlapArea = xOverlap * yOverlap;
+
+    // Calculate minimum area of the two rectangles
+    const area1 = rect1.width * rect1.height;
+    const area2 = rect2.width * rect2.height;
+    const minArea = Math.min(area1, area2);
+
+    // Check if overlap exceeds threshold
+    return overlapArea / minArea > threshold;
+  }
+
+  /**
+   * Merge nearby rectangles that likely belong to the same field
+   */
+  private mergeNearbyRectangles(rectangles: DetectedRectangle[]): DetectedRectangle[] {
+    if (rectangles.length === 0) return rectangles;
+
+    const merged: DetectedRectangle[] = [];
+    const processed = new Set<number>();
+    const proximityThreshold = 15; // pixels
+
+    for (let i = 0; i < rectangles.length; i++) {
+      if (processed.has(i)) continue;
+
+      const rect1 = rectangles[i];
+      const toMerge = [rect1];
+      processed.add(i);
+
+      // Find nearby rectangles
+      for (let j = i + 1; j < rectangles.length; j++) {
+        if (processed.has(j)) continue;
+
+        const rect2 = rectangles[j];
+        const distance = this.calculateRectangleDistance(rect1, rect2);
+
+        if (distance < proximityThreshold) {
+          toMerge.push(rect2);
+          processed.add(j);
+        }
+      }
+
+      // Merge if multiple rectangles found
+      if (toMerge.length > 1) {
+        merged.push(this.mergeBoundingBox(toMerge));
+      } else {
+        merged.push(rect1);
+      }
+    }
+
+    return merged;
+  }
+
+  /**
+   * Calculate minimum distance between two rectangles
+   */
+  private calculateRectangleDistance(rect1: DetectedRectangle, rect2: DetectedRectangle): number {
+    const left = Math.max(rect1.x, rect2.x);
+    const right = Math.min(rect1.x + rect1.width, rect2.x + rect2.width);
+    const top = Math.max(rect1.y, rect2.y);
+    const bottom = Math.min(rect1.y + rect1.height, rect2.y + rect2.height);
+
+    const dx = left > right ? left - right : 0;
+    const dy = top > bottom ? top - bottom : 0;
+
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  /**
+   * Create bounding box around multiple rectangles
+   */
+  private mergeBoundingBox(rectangles: DetectedRectangle[]): DetectedRectangle {
+    const minX = Math.min(...rectangles.map((r) => r.x));
+    const minY = Math.min(...rectangles.map((r) => r.y));
+    const maxX = Math.max(...rectangles.map((r) => r.x + r.width));
+    const maxY = Math.max(...rectangles.map((r) => r.y + r.height));
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+      page: rectangles[0].page,
+    };
+  }
+
+  /**
+   * Perform OCR on the canvas to detect text with enhanced preprocessing
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async detectTextWithOCR(canvas: any, pageNum: number): Promise<DetectedText[]> {
+    try {
+      // Preprocess canvas for better OCR results
+      const preprocessedCanvas = this.preprocessForOCR(canvas);
+
+      const result = await Tesseract.recognize(preprocessedCanvas, 'pol', {
+        logger: (m) => {
+          // Optional: log progress
+          if (m.status === 'recognizing text') {
+            // eslint-disable-next-line no-console
+            console.log(`OCR Progress (Page ${pageNum}): ${Math.round(m.progress * 100)}%`);
+          }
+        },
       });
 
       const texts: DetectedText[] = [];
-      
+
       if (result.data.words) {
         for (const word of result.data.words) {
-          texts.push({
-            text: word.text,
-            x: word.bbox.x0 / 2, // Scale back from 2x rendering
-            y: word.bbox.y0 / 2,
-            width: (word.bbox.x1 - word.bbox.x0) / 2,
-            height: (word.bbox.y1 - word.bbox.y0) / 2,
-            confidence: word.confidence / 100
-          });
+          // Filter out very low confidence words
+          if (word.confidence > 40) {
+            // Lower threshold to catch more text
+            texts.push({
+              text: word.text,
+              x: word.bbox.x0 / 2, // Scale back from 2x rendering
+              y: word.bbox.y0 / 2,
+              width: (word.bbox.x1 - word.bbox.x0) / 2,
+              height: (word.bbox.y1 - word.bbox.y0) / 2,
+              confidence: word.confidence / 100,
+            });
+          }
         }
       }
 
@@ -350,7 +574,93 @@ export class PdfFieldDetector {
   }
 
   /**
-   * Match detected text to rectangles to identify form fields
+   * Preprocess canvas for better OCR results
+   * Applies contrast enhancement and binarization
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private preprocessForOCR(canvas: any): any {
+    const context = canvas.getContext('2d');
+    if (!context) return canvas;
+
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    // Step 1: Enhance contrast
+    const factor = 1.5; // Contrast factor
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = Math.min(255, Math.max(0, factor * (data[i] - 128) + 128)); // R
+      data[i + 1] = Math.min(255, Math.max(0, factor * (data[i + 1] - 128) + 128)); // G
+      data[i + 2] = Math.min(255, Math.max(0, factor * (data[i + 2] - 128) + 128)); // B
+    }
+
+    // Step 2: Apply adaptive binarization for better text clarity
+    const grayscale = new Uint8ClampedArray(canvas.width * canvas.height);
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      grayscale[i / 4] = gray;
+    }
+
+    // Calculate local threshold (Otsu's method simplified)
+    const threshold = this.calculateOtsuThreshold(grayscale);
+
+    // Apply threshold
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = grayscale[i / 4];
+      const binary = gray > threshold ? 255 : 0;
+      data[i] = data[i + 1] = data[i + 2] = binary;
+    }
+
+    context.putImageData(imageData, 0, 0);
+    return canvas;
+  }
+
+  /**
+   * Calculate Otsu's threshold for binarization
+   */
+  private calculateOtsuThreshold(grayscale: Uint8ClampedArray): number {
+    const histogram = new Array(256).fill(0);
+
+    // Build histogram
+    for (let i = 0; i < grayscale.length; i++) {
+      histogram[Math.floor(grayscale[i])]++;
+    }
+
+    const total = grayscale.length;
+    let sum = 0;
+    for (let i = 0; i < 256; i++) {
+      sum += i * histogram[i];
+    }
+
+    let sumB = 0;
+    let wB = 0;
+    let wF = 0;
+    let maxVariance = 0;
+    let threshold = 0;
+
+    for (let t = 0; t < 256; t++) {
+      wB += histogram[t];
+      if (wB === 0) continue;
+
+      wF = total - wB;
+      if (wF === 0) break;
+
+      sumB += t * histogram[t];
+      const mB = sumB / wB;
+      const mF = (sum - sumB) / wF;
+
+      const variance = wB * wF * (mB - mF) * (mB - mF);
+
+      if (variance > maxVariance) {
+        maxVariance = variance;
+        threshold = t;
+      }
+    }
+
+    return threshold;
+  }
+
+  /**
+   * Match detected text to rectangles to identify form fields with enhanced spatial reasoning
    */
   private matchTextToRectangles(
     texts: DetectedText[],
@@ -359,39 +669,68 @@ export class PdfFieldDetector {
     pageHeight: number
   ): DetectedField[] {
     const fields: DetectedField[] = [];
-    const maxDistance = 100; // Maximum distance between label and field
+    const maxDistance = 150; // Increased maximum distance for better matching
+    const matched = new Set<string>(); // Track matched rectangles
 
     for (const rect of rectangles) {
-      // Look for text near this rectangle (typically above or to the left)
-      let closestText: DetectedText | null = null;
-      let minDistance = maxDistance;
+      // Look for text near this rectangle with improved spatial reasoning
+      let bestMatch: { text: DetectedText; score: number } | null = null;
 
       for (const text of texts) {
-        // Calculate distance from text to rectangle
-        const distance = this.calculateDistance(
-          { x: text.x, y: text.y },
-          { x: rect.x, y: rect.y }
-        );
+        if (text.confidence < 0.4) continue; // Filter very low confidence
 
-        // Text should be above or to the left of the field
+        // Calculate multiple spatial relationships
+        const distance = this.calculateDistance({ x: text.x, y: text.y }, { x: rect.x, y: rect.y });
+
+        if (distance > maxDistance) continue;
+
+        // Enhanced spatial analysis
         const isAbove = text.y < rect.y && text.y > rect.y - maxDistance;
-        const isLeft = text.x < rect.x && text.x > rect.x - maxDistance && 
-                      Math.abs(text.y - rect.y) < 30;
+        const isLeft =
+          text.x < rect.x && text.x > rect.x - maxDistance * 2 && Math.abs(text.y - rect.y) < 50;
+        const isNearTopLeft =
+          text.x < rect.x + 20 &&
+          text.y < rect.y + 20 &&
+          text.x > rect.x - maxDistance &&
+          text.y > rect.y - maxDistance;
 
-        if ((isAbove || isLeft) && distance < minDistance && text.confidence > 0.5) {
-          closestText = text;
-          minDistance = distance;
+        // Calculate alignment score
+        const horizontalAlignment = Math.abs(text.x - rect.x) < 30 ? 1 : 0;
+        const verticalAlignment = Math.abs(text.y - rect.y) < 10 ? 1 : 0;
+
+        // Calculate proximity score (closer is better)
+        const proximityScore = 1 - distance / maxDistance;
+
+        // Calculate total match score
+        let score = proximityScore * 0.4 + text.confidence * 0.3;
+
+        if (isAbove)
+          score += 0.3; // Strong preference for labels above
+        else if (isLeft)
+          score += 0.2; // Medium preference for labels to the left
+        else if (isNearTopLeft) score += 0.15; // Weak preference for nearby
+
+        score += horizontalAlignment * 0.05 + verticalAlignment * 0.05;
+
+        // Update best match if this is better
+        if (!bestMatch || score > bestMatch.score) {
+          bestMatch = { text, score };
         }
       }
 
-      // Generate field name from label or use generic name
-      const fieldName = closestText 
-        ? this.generateFieldName(closestText.text)
+      // Generate field information
+      const fieldKey = `${rect.x}_${rect.y}_${rect.width}_${rect.height}`;
+      if (matched.has(fieldKey)) continue;
+      matched.add(fieldKey);
+
+      const fieldName = bestMatch
+        ? this.generateFieldName(bestMatch.text.text)
         : `field_${pageNum}_${Math.round(rect.x)}_${Math.round(rect.y)}`;
 
-      const label = closestText ? closestText.text : '';
+      const label = bestMatch ? bestMatch.text.text : '';
+      const confidence = bestMatch ? Math.min(bestMatch.score, bestMatch.text.confidence) : 0.5;
 
-      // Determine field type based on size and label
+      // Determine field type with improved heuristics
       const fieldType = this.determineFieldType(rect, label);
 
       // Convert Y coordinate to PDF coordinate system (from bottom)
@@ -405,8 +744,8 @@ export class PdfFieldDetector {
         width: Math.round(rect.width),
         height: Math.round(rect.height),
         page: pageNum,
-        confidence: closestText ? closestText.confidence : 0.5,
-        type: fieldType
+        confidence: confidence,
+        type: fieldType,
       });
     }
 
@@ -427,11 +766,19 @@ export class PdfFieldDetector {
    */
   private generateFieldName(label: string): string {
     // Remove Polish characters and special characters
-    let name = label.toLowerCase()
+    let name = label
+      .toLowerCase()
       .replace(/[ąćęłńóśźż]/g, (char) => {
         const map: Record<string, string> = {
-          'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
-          'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z'
+          ą: 'a',
+          ć: 'c',
+          ę: 'e',
+          ł: 'l',
+          ń: 'n',
+          ó: 'o',
+          ś: 's',
+          ź: 'z',
+          ż: 'z',
         };
         return map[char] || char;
       })
@@ -443,21 +790,43 @@ export class PdfFieldDetector {
   }
 
   /**
-   * Determine field type based on size and label
+   * Determine field type based on size, shape, and label with improved heuristics
    */
-  private determineFieldType(rect: DetectedRectangle, label: string): 'text' | 'checkbox' | 'signature' {
+  private determineFieldType(
+    rect: DetectedRectangle,
+    label: string
+  ): 'text' | 'checkbox' | 'signature' {
     const area = rect.width * rect.height;
-    
-    // Small square boxes are likely checkboxes
-    if (rect.width < 30 && rect.height < 30 && Math.abs(rect.width - rect.height) < 10) {
+    const aspectRatio = rect.width / rect.height;
+    const labelLower = label.toLowerCase();
+
+    // Enhanced checkbox detection
+    // Small square boxes with aspect ratio close to 1:1
+    if (rect.width < 35 && rect.height < 35 && aspectRatio > 0.7 && aspectRatio < 1.4) {
       return 'checkbox';
     }
-    
-    // Large boxes with "podpis" in label are signatures
-    if (label.toLowerCase().includes('podpis') && area > 5000) {
+
+    // Enhanced signature field detection
+    // Large boxes with signature-related keywords
+    const signatureKeywords = ['podpis', 'signature', 'sign', 'pieczęć', 'stamp'];
+    const hasSignatureKeyword = signatureKeywords.some((keyword) => labelLower.includes(keyword));
+
+    if (hasSignatureKeyword && area > 4000) {
       return 'signature';
     }
-    
+
+    // Very large rectangular boxes are likely signatures
+    if (area > 8000 && aspectRatio > 2) {
+      return 'signature';
+    }
+
+    // Date fields - typically small with date keywords
+    const dateKeywords = ['data', 'date', 'dzień', 'miesiac', 'rok'];
+    const hasDateKeyword = dateKeywords.some((keyword) => labelLower.includes(keyword));
+    if (hasDateKeyword && rect.width < 150 && rect.height < 40) {
+      return 'text';
+    }
+
     // Everything else is a text field
     return 'text';
   }
@@ -467,7 +836,7 @@ export class PdfFieldDetector {
    */
   generateMapping(detectionResult: FieldDetectionResult, formVersion: string = '2023'): object {
     const fields: Record<string, any> = {};
-    
+
     for (const field of detectionResult.fields) {
       fields[field.name] = {
         pdfField: field.name,
@@ -476,7 +845,7 @@ export class PdfFieldDetector {
         y: field.y,
         label: field.label,
         type: field.type,
-        confidence: field.confidence
+        confidence: field.confidence,
       };
     }
 
@@ -488,9 +857,67 @@ export class PdfFieldDetector {
         generatedBy: 'PdfFieldDetector',
         generatedAt: new Date().toISOString(),
         pageCount: detectionResult.pageCount,
-        pageSize: detectionResult.pageSize
-      }
+        pageSize: detectionResult.pageSize,
+        detectionStats: {
+          totalRectangles: detectionResult.rectangles.length,
+          totalTexts: detectionResult.texts.length,
+          matchedFields: detectionResult.fields.length,
+          avgConfidence:
+            detectionResult.fields.reduce((sum, f) => sum + f.confidence, 0) /
+            Math.max(detectionResult.fields.length, 1),
+        },
+      },
     };
+  }
+
+  /**
+   * Create visual debug canvas showing detected elements
+   * Useful for troubleshooting and validating detection results
+   */
+
+  createDebugVisualization(
+    canvas: any,
+    rectangles: DetectedRectangle[],
+    texts: DetectedText[],
+    fields: DetectedField[]
+  ): any {
+    const debugCanvas = document.createElement('canvas');
+    debugCanvas.width = canvas.width;
+    debugCanvas.height = canvas.height;
+    const ctx = debugCanvas.getContext('2d');
+
+    if (!ctx) return debugCanvas;
+
+    // Draw original image
+    ctx.drawImage(canvas, 0, 0);
+
+    // Draw detected rectangles in blue
+    ctx.strokeStyle = 'rgba(0, 0, 255, 0.5)';
+    ctx.lineWidth = 2;
+    for (const rect of rectangles) {
+      ctx.strokeRect(rect.x * 2, rect.y * 2, rect.width * 2, rect.height * 2);
+    }
+
+    // Draw detected text positions in green
+    ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+    for (const text of texts) {
+      ctx.fillRect(text.x * 2, text.y * 2, text.width * 2, text.height * 2);
+    }
+
+    // Draw matched fields in red
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+    ctx.lineWidth = 3;
+    ctx.font = '20px Arial';
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+
+    for (const field of fields) {
+      const x = field.x * 2;
+      const y = (canvas.height / 2 - field.y - field.height) * 2; // Convert from PDF coords
+      ctx.strokeRect(x, y, field.width * 2, field.height * 2);
+      ctx.fillText(`${field.name} (${(field.confidence * 100).toFixed(0)}%)`, x, y - 5);
+    }
+
+    return debugCanvas;
   }
 
   /**
@@ -501,7 +928,7 @@ export class PdfFieldDetector {
     if (!response.ok) {
       throw new Error(`Failed to fetch PDF from ${pdfUrl}`);
     }
-    
+
     const arrayBuffer = await response.arrayBuffer();
     return this.detectFields(arrayBuffer);
   }
