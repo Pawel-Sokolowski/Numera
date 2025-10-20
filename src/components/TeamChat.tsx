@@ -1,22 +1,29 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Badge } from "./ui/badge";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { ScrollArea } from "./ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { 
-  MessageSquare, 
-  Hash, 
-  Lock, 
-  Plus, 
-  Send, 
-  Settings, 
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Badge } from './ui/badge';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog';
+import { ScrollArea } from './ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import {
+  MessageSquare,
+  Hash,
+  Lock,
+  Plus,
+  Send,
+  Settings,
   Search,
   Phone,
   Video,
@@ -26,9 +33,15 @@ import {
   Clock,
   CheckCheck,
   Eye,
-  Users
-} from "lucide-react";
-import { ChatChannel, ChatMessage, PrivateMessage, User as UserType, Conversation } from "../types/client";
+  Users,
+} from 'lucide-react';
+import {
+  ChatChannel,
+  ChatMessage,
+  PrivateMessage,
+  User as UserType,
+  Conversation,
+} from '../types/client';
 import { toast } from 'sonner';
 
 interface TeamChatProps {
@@ -52,7 +65,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
     description: '',
     type: 'public',
     members: [currentUser.id],
-    admins: [currentUser.id]
+    admins: [currentUser.id],
   });
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [newMessageContent, setNewMessageContent] = useState('');
@@ -66,40 +79,44 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
         name: 'ogólny',
         description: 'Główny kanał dla całego zespołu',
         type: 'public',
-        members: allUsers.map(u => u.id),
+        members: allUsers.map((u) => u.id),
         admins: [currentUser.id],
         isArchived: false,
         createdBy: currentUser.id,
         createdAt: '2024-01-01',
         lastActivity: new Date().toISOString(),
-        unreadCount: 0
+        unreadCount: 0,
       },
       {
         id: '2',
         name: 'księgowość',
         description: 'Kanał dla zespołu księgowego',
         type: 'private',
-        members: allUsers.filter(u => u.role === 'ksiegowa' || u.role === 'administrator').map(u => u.id),
+        members: allUsers
+          .filter((u) => u.role === 'ksiegowa' || u.role === 'administrator')
+          .map((u) => u.id),
         admins: [currentUser.id],
         isArchived: false,
         createdBy: currentUser.id,
         createdAt: '2024-01-01',
         lastActivity: new Date().toISOString(),
-        unreadCount: 2
+        unreadCount: 2,
       },
       {
         id: '3',
         name: 'kadry',
         description: 'Kanał dla spraw personalnych',
         type: 'private',
-        members: allUsers.filter(u => u.role === 'kadrowa' || u.role === 'administrator').map(u => u.id),
+        members: allUsers
+          .filter((u) => u.role === 'kadrowa' || u.role === 'administrator')
+          .map((u) => u.id),
         admins: [currentUser.id],
         isArchived: false,
         createdBy: currentUser.id,
         createdAt: '2024-01-01',
         lastActivity: new Date().toISOString(),
-        unreadCount: 0
-      }
+        unreadCount: 0,
+      },
     ];
 
     const mockChannelMessages: { [key: string]: ChatMessage[] } = {
@@ -111,7 +128,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
           content: 'Witajcie! Jak minął poniedziałek?',
           timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
           type: 'text',
-          channelId: '1'
+          channelId: '1',
         },
         {
           id: '2',
@@ -120,8 +137,8 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
           content: 'Świetnie! Udało się zamknąć projekt z Tech Solutions.',
           timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
           type: 'text',
-          channelId: '1'
-        }
+          channelId: '1',
+        },
       ],
       '2': [
         {
@@ -131,16 +148,16 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
           content: 'Przypominam o terminie składania deklaracji VAT - 25 stycznia.',
           timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
           type: 'text',
-          channelId: '2'
-        }
-      ]
+          channelId: '2',
+        },
+      ],
     };
 
     // Create conversations with other users
     const mockConversations: Conversation[] = [];
     const mockPrivateMessages: { [key: string]: PrivateMessage[] } = {};
-    
-    allUsers.forEach(user => {
+
+    allUsers.forEach((user) => {
       if (user.id !== currentUser.id) {
         const conversationId = `conv_${currentUser.id}_${user.id}`;
         const messages: PrivateMessage[] = [
@@ -151,19 +168,19 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
             content: `Cześć ${currentUser.firstName}! Masz chwilę na rozmowę?`,
             timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
             isRead: false,
-            type: 'text'
-          }
+            type: 'text',
+          },
         ];
-        
+
         mockConversations.push({
           id: conversationId,
           participants: [currentUser.id, user.id],
           lastMessage: messages[messages.length - 1],
           lastActivity: messages[messages.length - 1].timestamp,
-          unreadCount: messages.filter(msg => msg.senderId === user.id && !msg.isRead).length,
-          isArchived: false
+          unreadCount: messages.filter((msg) => msg.senderId === user.id && !msg.isRead).length,
+          isArchived: false,
         });
-        
+
         mockPrivateMessages[conversationId] = messages;
       }
     });
@@ -185,29 +202,31 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
       content: messageInput,
       timestamp: new Date().toISOString(),
       type: 'text',
-      channelId: selectedChannel.id
+      channelId: selectedChannel.id,
     };
 
-    setChannelMessages(prev => ({
+    setChannelMessages((prev) => ({
       ...prev,
-      [selectedChannel.id]: [...(prev[selectedChannel.id] || []), newMessage]
+      [selectedChannel.id]: [...(prev[selectedChannel.id] || []), newMessage],
     }));
 
     // Update channel last activity
-    setChannels(prev => prev.map(channel => 
-      channel.id === selectedChannel.id 
-        ? { ...channel, lastActivity: new Date().toISOString() }
-        : channel
-    ));
+    setChannels((prev) =>
+      prev.map((channel) =>
+        channel.id === selectedChannel.id
+          ? { ...channel, lastActivity: new Date().toISOString() }
+          : channel
+      )
+    );
 
     setMessageInput('');
-    toast.success("Wiadomość została wysłana");
+    toast.success('Wiadomość została wysłana');
   };
 
   const sendPrivateMessage = () => {
     if (!messageInput.trim() || !selectedConversation) return;
 
-    const receiverId = selectedConversation.participants.find(id => id !== currentUser.id);
+    const receiverId = selectedConversation.participants.find((id) => id !== currentUser.id);
     if (!receiverId) return;
 
     const newMessage: PrivateMessage = {
@@ -217,41 +236,44 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
       content: messageInput,
       timestamp: new Date().toISOString(),
       isRead: false,
-      type: 'text'
+      type: 'text',
     };
 
-    setPrivateMessages(prev => ({
+    setPrivateMessages((prev) => ({
       ...prev,
-      [selectedConversation.id]: [...(prev[selectedConversation.id] || []), newMessage]
+      [selectedConversation.id]: [...(prev[selectedConversation.id] || []), newMessage],
     }));
 
     // Update conversation
-    setConversations(prev => prev.map(conv => 
-      conv.id === selectedConversation.id 
-        ? { 
-            ...conv, 
-            lastMessage: newMessage, 
-            lastActivity: new Date().toISOString() 
-          }
-        : conv
-    ));
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === selectedConversation.id
+          ? {
+              ...conv,
+              lastMessage: newMessage,
+              lastActivity: new Date().toISOString(),
+            }
+          : conv
+      )
+    );
 
     setMessageInput('');
-    toast.success("Prywatna wiadomość została wysłana");
+    toast.success('Prywatna wiadomość została wysłana');
   };
 
   const startNewConversation = () => {
     if (!selectedRecipient || !newMessageContent.trim()) {
-      toast.error("Wybierz odbiorcę i wpisz wiadomość");
+      toast.error('Wybierz odbiorcę i wpisz wiadomość');
       return;
     }
 
-    const recipient = allUsers.find(u => u.id === selectedRecipient);
+    const recipient = allUsers.find((u) => u.id === selectedRecipient);
     if (!recipient) return;
 
     // Check if conversation already exists
-    const existingConv = conversations.find(conv => 
-      conv.participants.includes(selectedRecipient) && conv.participants.includes(currentUser.id)
+    const existingConv = conversations.find(
+      (conv) =>
+        conv.participants.includes(selectedRecipient) && conv.participants.includes(currentUser.id)
     );
 
     if (existingConv) {
@@ -263,23 +285,25 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
         content: newMessageContent,
         timestamp: new Date().toISOString(),
         isRead: false,
-        type: 'text'
+        type: 'text',
       };
 
-      setPrivateMessages(prev => ({
+      setPrivateMessages((prev) => ({
         ...prev,
-        [existingConv.id]: [...(prev[existingConv.id] || []), newMessage]
+        [existingConv.id]: [...(prev[existingConv.id] || []), newMessage],
       }));
 
-      setConversations(prev => prev.map(conv => 
-        conv.id === existingConv.id 
-          ? { 
-              ...conv, 
-              lastMessage: newMessage, 
-              lastActivity: new Date().toISOString() 
-            }
-          : conv
-      ));
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === existingConv.id
+            ? {
+                ...conv,
+                lastMessage: newMessage,
+                lastActivity: new Date().toISOString(),
+              }
+            : conv
+        )
+      );
 
       setSelectedConversation(existingConv);
     } else {
@@ -292,7 +316,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
         content: newMessageContent,
         timestamp: new Date().toISOString(),
         isRead: false,
-        type: 'text'
+        type: 'text',
       };
 
       const newConversation: Conversation = {
@@ -301,13 +325,13 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
         lastMessage: newMessage,
         lastActivity: new Date().toISOString(),
         unreadCount: 0,
-        isArchived: false
+        isArchived: false,
       };
 
-      setConversations(prev => [...prev, newConversation]);
-      setPrivateMessages(prev => ({
+      setConversations((prev) => [...prev, newConversation]);
+      setPrivateMessages((prev) => ({
         ...prev,
-        [conversationId]: [newMessage]
+        [conversationId]: [newMessage],
       }));
 
       setSelectedConversation(newConversation);
@@ -318,12 +342,12 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
     setIsNewMessageDialogOpen(false);
     setSelectedRecipient('');
     setNewMessageContent('');
-    toast.success("Nowa rozmowa została rozpoczęta");
+    toast.success('Nowa rozmowa została rozpoczęta');
   };
 
   const getUserFromConversation = (conversation: Conversation) => {
-    const otherUserId = conversation.participants.find(id => id !== currentUser.id);
-    return allUsers.find(u => u.id === otherUserId);
+    const otherUserId = conversation.participants.find((id) => id !== currentUser.id);
+    return allUsers.find((u) => u.id === otherUserId);
   };
 
   const getUserInitials = (user: UserType) => {
@@ -347,7 +371,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
 
   const createChannel = () => {
     if (!newChannel.name?.trim()) {
-      toast.error("Wprowadź nazwę kanału");
+      toast.error('Wprowadź nazwę kanału');
       return;
     }
 
@@ -362,34 +386,39 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
       createdBy: currentUser.id,
       createdAt: new Date().toISOString(),
       lastActivity: new Date().toISOString(),
-      unreadCount: 0
+      unreadCount: 0,
     };
 
-    setChannels(prev => [...prev, channel]);
+    setChannels((prev) => [...prev, channel]);
     setIsNewChannelDialogOpen(false);
     setNewChannel({
       name: '',
       description: '',
       type: 'public',
       members: [currentUser.id],
-      admins: [currentUser.id]
+      admins: [currentUser.id],
     });
-    toast.success("Kanał został utworzony");
+    toast.success('Kanał został utworzony');
   };
 
-  const filteredChannels = channels.filter(channel =>
-    channel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    channel.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredChannels = channels.filter(
+    (channel) =>
+      channel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      channel.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredConversations = conversations.filter(conversation => {
+  const filteredConversations = conversations.filter((conversation) => {
     const otherUser = getUserFromConversation(conversation);
     if (!otherUser) return false;
-    return (`${otherUser.firstName} ${otherUser.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      otherUser.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    return (
+      `${otherUser.firstName} ${otherUser.lastName}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      otherUser.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   });
 
-  const availableUsers = allUsers.filter(user => user.id !== currentUser.id);
+  const availableUsers = allUsers.filter((user) => user.id !== currentUser.id);
 
   return (
     <div className="space-y-6">
@@ -411,9 +440,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Nowa wiadomość</DialogTitle>
-                <DialogDescription>
-                  Rozpocznij nową rozmowę z członkiem zespołu
-                </DialogDescription>
+                <DialogDescription>Rozpocznij nową rozmowę z członkiem zespołu</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -423,7 +450,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                       <SelectValue placeholder="Wybierz pracownika..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableUsers.map(user => (
+                      {availableUsers.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6">
@@ -432,7 +459,9 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <span>{user.firstName} {user.lastName}</span>
+                              <span>
+                                {user.firstName} {user.lastName}
+                              </span>
                               <span className="text-xs text-muted-foreground ml-2">
                                 {user.role}
                               </span>
@@ -453,8 +482,8 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                   />
                 </div>
                 <div className="flex justify-end space-x-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setIsNewMessageDialogOpen(false);
                       setSelectedRecipient('');
@@ -492,7 +521,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                   <Input
                     id="channelName"
                     value={newChannel.name || ''}
-                    onChange={(e) => setNewChannel(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => setNewChannel((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="np. marketing, programiści"
                   />
                 </div>
@@ -501,7 +530,9 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                   <Textarea
                     id="channelDescription"
                     value={newChannel.description || ''}
-                    onChange={(e) => setNewChannel(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) =>
+                      setNewChannel((prev) => ({ ...prev, description: e.target.value }))
+                    }
                     placeholder="Opcjonalny opis kanału"
                     rows={3}
                   />
@@ -514,7 +545,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                         type="radio"
                         id="public"
                         checked={newChannel.type === 'public'}
-                        onChange={() => setNewChannel(prev => ({ ...prev, type: 'public' }))}
+                        onChange={() => setNewChannel((prev) => ({ ...prev, type: 'public' }))}
                       />
                       <Label htmlFor="public" className="flex items-center gap-2">
                         <Hash className="h-4 w-4" />
@@ -526,7 +557,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                         type="radio"
                         id="private"
                         checked={newChannel.type === 'private'}
-                        onChange={() => setNewChannel(prev => ({ ...prev, type: 'private' }))}
+                        onChange={() => setNewChannel((prev) => ({ ...prev, type: 'private' }))}
                       />
                       <Label htmlFor="private" className="flex items-center gap-2">
                         <Lock className="h-4 w-4" />
@@ -539,9 +570,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                   <Button variant="outline" onClick={() => setIsNewChannelDialogOpen(false)}>
                     Anuluj
                   </Button>
-                  <Button onClick={createChannel}>
-                    Utwórz kanał
-                  </Button>
+                  <Button onClick={createChannel}>Utwórz kanał</Button>
                 </div>
               </div>
             </DialogContent>
@@ -582,7 +611,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
               <TabsContent value="channels" className="mt-0">
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-1 p-4">
-                    {filteredChannels.map(channel => (
+                    {filteredChannels.map((channel) => (
                       <div
                         key={channel.id}
                         className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-accent ${
@@ -591,6 +620,12 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                         onClick={() => {
                           setSelectedChannel(channel);
                           setSelectedConversation(null);
+                          // Mark channel messages as read
+                          setChannels((prev) =>
+                            prev.map((ch) =>
+                              ch.id === channel.id ? { ...ch, unreadCount: 0 } : ch
+                            )
+                          );
                         }}
                       >
                         {channel.type === 'public' ? (
@@ -621,7 +656,7 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
               <TabsContent value="direct" className="mt-0">
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-1 p-4">
-                    {filteredConversations.map(conversation => {
+                    {filteredConversations.map((conversation) => {
                       const otherUser = getUserFromConversation(conversation);
                       if (!otherUser) return null;
                       return (
@@ -634,9 +669,11 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                             setSelectedConversation(conversation);
                             setSelectedChannel(null);
                             // Mark as read
-                            setConversations(prev => prev.map(conv => 
-                              conv.id === conversation.id ? { ...conv, unreadCount: 0 } : conv
-                            ));
+                            setConversations((prev) =>
+                              prev.map((conv) =>
+                                conv.id === conversation.id ? { ...conv, unreadCount: 0 } : conv
+                              )
+                            );
                           }}
                         >
                           <Avatar className="h-8 w-8">
@@ -735,11 +772,14 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                 <ScrollArea className="flex-1 mb-4">
                   <div className="space-y-4">
                     {selectedChannel
-                      ? (channelMessages[selectedChannel.id] || []).map(message => (
+                      ? (channelMessages[selectedChannel.id] || []).map((message) => (
                           <div key={message.id} className="flex items-start gap-3">
                             <Avatar className="h-8 w-8">
                               <AvatarFallback>
-                                {message.senderName.split(' ').map(n => n[0]).join('')}
+                                {message.senderName
+                                  .split(' ')
+                                  .map((n) => n[0])
+                                  .join('')}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
@@ -754,39 +794,41 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                           </div>
                         ))
                       : selectedConversation
-                      ? (privateMessages[selectedConversation.id] || []).map(message => (
-                          <div
-                            key={message.id}
-                            className={`flex ${
-                              message.senderId === currentUser.id ? 'justify-end' : 'justify-start'
-                            }`}
-                          >
+                        ? (privateMessages[selectedConversation.id] || []).map((message) => (
                             <div
-                              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                              key={message.id}
+                              className={`flex ${
                                 message.senderId === currentUser.id
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-muted'
+                                  ? 'justify-end'
+                                  : 'justify-start'
                               }`}
                             >
-                              <p className="text-sm">{message.content}</p>
-                              <div className="flex items-center justify-between mt-1">
-                                <p className="text-xs opacity-75">
-                                  {formatTimestamp(message.timestamp)}
-                                </p>
-                                {message.senderId === currentUser.id && (
-                                  <div className="flex items-center gap-1">
-                                    {message.isRead ? (
-                                      <CheckCheck className="h-3 w-3" />
-                                    ) : (
-                                      <Eye className="h-3 w-3" />
-                                    )}
-                                  </div>
-                                )}
+                              <div
+                                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                                  message.senderId === currentUser.id
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted'
+                                }`}
+                              >
+                                <p className="text-sm">{message.content}</p>
+                                <div className="flex items-center justify-between mt-1">
+                                  <p className="text-xs opacity-75">
+                                    {formatTimestamp(message.timestamp)}
+                                  </p>
+                                  {message.senderId === currentUser.id && (
+                                    <div className="flex items-center gap-1">
+                                      {message.isRead ? (
+                                        <CheckCheck className="h-3 w-3" />
+                                      ) : (
+                                        <Eye className="h-3 w-3" />
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))
-                      : null}
+                          ))
+                        : null}
                   </div>
                 </ScrollArea>
                 <div className="flex items-center gap-2">
@@ -795,8 +837,8 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                       selectedChannel
                         ? `Napisz wiadomość na #${selectedChannel.name}`
                         : selectedConversation
-                        ? `Napisz wiadomość...`
-                        : 'Napisz wiadomość...'
+                          ? `Napisz wiadomość...`
+                          : 'Napisz wiadomość...'
                     }
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
@@ -822,8 +864,8 @@ export function TeamChat({ currentUser, allUsers }: TeamChatProps) {
                 <MessageSquare className="h-12 w-12 mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">Wybierz kanał lub rozmowę</h3>
                 <p>Wybierz kanał lub rozpocznij nową rozmowę, aby rozpocząć komunikację</p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="mt-4"
                   onClick={() => setIsNewMessageDialogOpen(true)}
                 >
