@@ -48,8 +48,14 @@
           var decoded = l.search.slice(1).split('&').map(function(s) { 
             return s.replace(/~and~/g, '&')
           }).join('?');
+          // Get the base path (e.g., /Numera/)
+          var basePath = l.pathname;
+          // If pathname ends with / and we have decoded path, combine properly
+          if (!basePath.endsWith('/')) {
+            basePath += '/';
+          }
           window.history.replaceState(null, null,
-              l.pathname.slice(0, -1) + decoded + l.hash
+              basePath + decoded.slice(1) + l.hash
           );
         }
       }(window.location))
