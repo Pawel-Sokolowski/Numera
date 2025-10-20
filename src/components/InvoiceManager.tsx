@@ -1,17 +1,18 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { Badge } from "./ui/badge";
-import { Separator } from "./ui/separator";
-import { FileText, Plus, Eye, Edit, Download, Trash2, Calculator } from "lucide-react";
-import { Invoice, InvoiceItem, Client } from "../types/client";
-import { mockInvoices } from "../data/mockData";
-import { mockClients } from "../data/mockClients";
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Badge } from './ui/badge';
+import { Separator } from './ui/separator';
+import { FileText, Plus, Eye, Edit, Download, Trash2, Calculator } from 'lucide-react';
+import { Invoice, InvoiceItem, Client } from '../types/client';
+import { mockInvoices } from '../data/mockData';
+import { mockClients } from '../data/mockClients';
 import { toast } from 'sonner';
+import { PDFInvoiceGenerator } from '../utils/pdfGenerator';
 
 export function InvoiceManager() {
   const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
@@ -24,14 +25,14 @@ export function InvoiceManager() {
     issueDate: new Date().toISOString().split('T')[0],
     dueDate: '',
     items: [] as InvoiceItem[],
-    notes: ''
+    notes: '',
   });
 
   const [newItem, setNewItem] = useState({
     description: '',
     quantity: 1,
     unitPrice: 0,
-    taxRate: 23
+    taxRate: 23,
   });
 
   const handleCreateInvoice = () => {
@@ -42,13 +43,13 @@ export function InvoiceManager() {
       issueDate: new Date().toISOString().split('T')[0],
       dueDate: '',
       items: [],
-      notes: ''
+      notes: '',
     });
   };
 
   const handleAddItem = () => {
     if (!newItem.description || newItem.quantity <= 0 || newItem.unitPrice <= 0) {
-      toast.error("Wypełnij wszystkie pola pozycji");
+      toast.error('Wypełnij wszystkie pola pozycji');
       return;
     }
 
@@ -64,26 +65,26 @@ export function InvoiceManager() {
       taxRate: newItem.taxRate,
       netAmount,
       taxAmount,
-      grossAmount
+      grossAmount,
     };
 
-    setInvoiceData(prev => ({
+    setInvoiceData((prev) => ({
       ...prev,
-      items: [...prev.items, item]
+      items: [...prev.items, item],
     }));
 
     setNewItem({
       description: '',
       quantity: 1,
       unitPrice: 0,
-      taxRate: 23
+      taxRate: 23,
     });
   };
 
   const handleRemoveItem = (itemId: string) => {
-    setInvoiceData(prev => ({
+    setInvoiceData((prev) => ({
       ...prev,
-      items: prev.items.filter(item => item.id !== itemId)
+      items: prev.items.filter((item) => item.id !== itemId),
     }));
   };
 
@@ -98,7 +99,7 @@ export function InvoiceManager() {
     e.preventDefault();
 
     if (!invoiceData.clientId || !invoiceData.dueDate || invoiceData.items.length === 0) {
-      toast.error("Wypełnij wszystkie wymagane pola i dodaj co najmniej jedną pozycję");
+      toast.error('Wypełnij wszystkie wymagane pola i dodaj co najmniej jedną pozycję');
       return;
     }
 
@@ -116,37 +117,59 @@ export function InvoiceManager() {
       totalTax,
       totalGross,
       status: 'utworzona',
-      notes: invoiceData.notes
+      notes: invoiceData.notes,
     };
 
-    setInvoices(prev => [...prev, newInvoice]);
+    setInvoices((prev) => [...prev, newInvoice]);
     setIsCreating(false);
-    toast.success("Faktura została utworzona pomyślnie");
+    toast.success('Faktura została utworzona pomyślnie');
   };
 
   const getClientName = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
+    const client = clients.find((c) => c.id === clientId);
     return client ? `${client.firstName} ${client.lastName}` : 'Nieznany klient';
   };
 
   const getStatusColor = (status: Invoice['status']) => {
     switch (status) {
-      case 'utworzona': return 'secondary';
-      case 'wyslana': return 'default';
-      case 'zaplacona': return 'default';
-      case 'przeterminowana': return 'destructive';
-      default: return 'outline';
+      case 'utworzona':
+        return 'secondary';
+      case 'wyslana':
+        return 'default';
+      case 'zaplacona':
+        return 'default';
+      case 'przeterminowana':
+        return 'destructive';
+      default:
+        return 'outline';
     }
   };
 
   const getStatusLabel = (status: Invoice['status']) => {
     const labels = {
-      'utworzona': 'Utworzona',
-      'wyslana': 'Wysłana',
-      'zaplacona': 'Zapłacona',
-      'przeterminowana': 'Przeterminowana'
+      utworzona: 'Utworzona',
+      wyslana: 'Wysłana',
+      zaplacona: 'Zapłacona',
+      przeterminowana: 'Przeterminowana',
     };
     return labels[status];
+  };
+
+  const handleDownloadPDF = (invoice: Invoice) => {
+    try {
+      const client = clients.find((c) => c.id === invoice.clientId);
+      if (!client) {
+        toast.error('Nie znaleziono danych klienta');
+        return;
+      }
+
+      const generator = new PDFInvoiceGenerator();
+      generator.generateInvoice(invoice, client);
+      toast.success('Faktura została pobrana');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Błąd podczas generowania PDF');
+    }
   };
 
   return (
@@ -154,9 +177,7 @@ export function InvoiceManager() {
       <div className="flex items-center justify-between">
         <div>
           <h1>Zarządzanie Fakturami</h1>
-          <p className="text-muted-foreground">
-            Twórz i zarządzaj fakturami dla klientów
-          </p>
+          <p className="text-muted-foreground">Twórz i zarządzaj fakturami dla klientów</p>
         </div>
         <Button onClick={handleCreateInvoice}>
           <Plus className="mr-2 h-4 w-4" />
@@ -175,9 +196,11 @@ export function InvoiceManager() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Klient *</Label>
-                  <Select 
-                    value={invoiceData.clientId} 
-                    onValueChange={(value) => setInvoiceData(prev => ({ ...prev, clientId: value }))}
+                  <Select
+                    value={invoiceData.clientId}
+                    onValueChange={(value) =>
+                      setInvoiceData((prev) => ({ ...prev, clientId: value }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Wybierz klienta" />
@@ -196,7 +219,9 @@ export function InvoiceManager() {
                   <Input
                     type="date"
                     value={invoiceData.issueDate}
-                    onChange={(e) => setInvoiceData(prev => ({ ...prev, issueDate: e.target.value }))}
+                    onChange={(e) =>
+                      setInvoiceData((prev) => ({ ...prev, issueDate: e.target.value }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -204,7 +229,9 @@ export function InvoiceManager() {
                   <Input
                     type="date"
                     value={invoiceData.dueDate}
-                    onChange={(e) => setInvoiceData(prev => ({ ...prev, dueDate: e.target.value }))}
+                    onChange={(e) =>
+                      setInvoiceData((prev) => ({ ...prev, dueDate: e.target.value }))
+                    }
                     required
                   />
                 </div>
@@ -214,13 +241,15 @@ export function InvoiceManager() {
 
               <div className="space-y-4">
                 <h3>Pozycje faktury</h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
                   <div className="space-y-2">
                     <Label>Opis usługi/towaru</Label>
                     <Input
                       value={newItem.description}
-                      onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
+                      onChange={(e) =>
+                        setNewItem((prev) => ({ ...prev, description: e.target.value }))
+                      }
                       placeholder="Opis pozycji"
                     />
                   </div>
@@ -230,7 +259,12 @@ export function InvoiceManager() {
                       type="number"
                       min="1"
                       value={newItem.quantity}
-                      onChange={(e) => setNewItem(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 1 }))}
+                      onChange={(e) =>
+                        setNewItem((prev) => ({
+                          ...prev,
+                          quantity: parseFloat(e.target.value) || 1,
+                        }))
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -240,14 +274,21 @@ export function InvoiceManager() {
                       min="0"
                       step="0.01"
                       value={newItem.unitPrice}
-                      onChange={(e) => setNewItem(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                      onChange={(e) =>
+                        setNewItem((prev) => ({
+                          ...prev,
+                          unitPrice: parseFloat(e.target.value) || 0,
+                        }))
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>VAT (%)</Label>
-                    <Select 
-                      value={newItem.taxRate.toString()} 
-                      onValueChange={(value) => setNewItem(prev => ({ ...prev, taxRate: parseFloat(value) }))}
+                    <Select
+                      value={newItem.taxRate.toString()}
+                      onValueChange={(value) =>
+                        setNewItem((prev) => ({ ...prev, taxRate: parseFloat(value) }))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -318,7 +359,7 @@ export function InvoiceManager() {
                 <Label>Uwagi</Label>
                 <Input
                   value={invoiceData.notes}
-                  onChange={(e) => setInvoiceData(prev => ({ ...prev, notes: e.target.value }))}
+                  onChange={(e) => setInvoiceData((prev) => ({ ...prev, notes: e.target.value }))}
                   placeholder="Dodatkowe informacje..."
                 />
               </div>
@@ -341,12 +382,14 @@ export function InvoiceManager() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Faktura {selectedInvoice.number}</CardTitle>
-                <CardDescription>
-                  Klient: {getClientName(selectedInvoice.clientId)}
-                </CardDescription>
+                <CardDescription>Klient: {getClientName(selectedInvoice.clientId)}</CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadPDF(selectedInvoice)}
+                >
                   <Download className="mr-2 h-4 w-4" />
                   Pobierz PDF
                 </Button>
@@ -361,9 +404,17 @@ export function InvoiceManager() {
               <div>
                 <h4>Szczegóły faktury</h4>
                 <div className="space-y-2 text-sm">
-                  <div><strong>Numer:</strong> {selectedInvoice.number}</div>
-                  <div><strong>Data wystawienia:</strong> {new Date(selectedInvoice.issueDate).toLocaleDateString('pl-PL')}</div>
-                  <div><strong>Termin płatności:</strong> {new Date(selectedInvoice.dueDate).toLocaleDateString('pl-PL')}</div>
+                  <div>
+                    <strong>Numer:</strong> {selectedInvoice.number}
+                  </div>
+                  <div>
+                    <strong>Data wystawienia:</strong>{' '}
+                    {new Date(selectedInvoice.issueDate).toLocaleDateString('pl-PL')}
+                  </div>
+                  <div>
+                    <strong>Termin płatności:</strong>{' '}
+                    {new Date(selectedInvoice.dueDate).toLocaleDateString('pl-PL')}
+                  </div>
                   <div>
                     <strong>Status:</strong>{' '}
                     <Badge variant={getStatusColor(selectedInvoice.status)}>
@@ -375,9 +426,15 @@ export function InvoiceManager() {
               <div>
                 <h4>Podsumowanie</h4>
                 <div className="space-y-2 text-sm">
-                  <div><strong>Wartość netto:</strong> {selectedInvoice.totalNet.toFixed(2)} zł</div>
-                  <div><strong>VAT:</strong> {selectedInvoice.totalTax.toFixed(2)} zł</div>
-                  <div><strong>Wartość brutto:</strong> {selectedInvoice.totalGross.toFixed(2)} zł</div>
+                  <div>
+                    <strong>Wartość netto:</strong> {selectedInvoice.totalNet.toFixed(2)} zł
+                  </div>
+                  <div>
+                    <strong>VAT:</strong> {selectedInvoice.totalTax.toFixed(2)} zł
+                  </div>
+                  <div>
+                    <strong>Wartość brutto:</strong> {selectedInvoice.totalGross.toFixed(2)} zł
+                  </div>
                 </div>
               </div>
             </div>
@@ -448,7 +505,9 @@ export function InvoiceManager() {
                     <TableRow key={invoice.id}>
                       <TableCell className="font-medium">{invoice.number}</TableCell>
                       <TableCell>{getClientName(invoice.clientId)}</TableCell>
-                      <TableCell>{new Date(invoice.issueDate).toLocaleDateString('pl-PL')}</TableCell>
+                      <TableCell>
+                        {new Date(invoice.issueDate).toLocaleDateString('pl-PL')}
+                      </TableCell>
                       <TableCell>{new Date(invoice.dueDate).toLocaleDateString('pl-PL')}</TableCell>
                       <TableCell>{invoice.totalGross.toFixed(2)} zł</TableCell>
                       <TableCell>
