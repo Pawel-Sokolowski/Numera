@@ -452,8 +452,8 @@ zwanym dalej "Pracownikiem"
             <div className="space-y-2">
               {upcomingRenewals.map(contract => (
                 <div key={contract.id} className="flex items-center justify-between p-2 bg-white rounded border">
-                  <div>
-                    <p className="font-medium text-sm">{contract.title}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm whitespace-normal break-words">{contract.title}</p>
                     <p className="text-xs text-muted-foreground">
                       Przypomnienie: {contract.nextReminderDate ? new Date(contract.nextReminderDate).toLocaleDateString('pl-PL') : '-'}
                     </p>
@@ -549,8 +549,8 @@ zwanym dalej "Pracownikiem"
                   {filteredContracts.map((contract) => (
                     <TableRow key={contract.id}>
                       <TableCell>
-                        <div>
-                          <p className="font-medium text-sm">{contract.title}</p>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm whitespace-normal break-words">{contract.title}</p>
                           <p className="text-xs text-muted-foreground">{contract.contractNumber}</p>
                         </div>
                       </TableCell>
@@ -628,9 +628,9 @@ zwanym dalej "Pracownikiem"
                     return (
                       <div key={contract.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center gap-4">
-                          <Calendar className="h-8 w-8 text-blue-500" />
-                          <div>
-                            <p className="font-medium">{contract.title}</p>
+                          <Calendar className="h-8 w-8 text-blue-500 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium whitespace-normal break-words">{contract.title}</p>
                             <p className="text-sm text-muted-foreground">
                               Wygasa: {endDate.toLocaleDateString('pl-PL')}
                             </p>
@@ -725,7 +725,7 @@ zwanym dalej "Pracownikiem"
 
       {/* Templates Dialog */}
       <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-[75vw] w-[75vw]">
           <DialogHeader>
             <DialogTitle>Szablony umów</DialogTitle>
             <DialogDescription>
@@ -786,7 +786,7 @@ zwanym dalej "Pracownikiem"
 
       {/* Contract Details Dialog */}
       <Dialog open={!!selectedContract} onOpenChange={() => setSelectedContract(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-[75vw] w-[75vw]">
           {selectedContract && (
             <>
               <DialogHeader>
@@ -888,7 +888,7 @@ zwanym dalej "Pracownikiem"
 
       {/* Template Preview Dialog */}
       <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-[75vw] w-[75vw]">
           <DialogHeader>
             <DialogTitle>Podgląd szablonu: {previewTemplate?.name}</DialogTitle>
             <DialogDescription>
@@ -952,6 +952,119 @@ zwanym dalej "Pracownikiem"
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Contract Dialog */}
+      <Dialog open={showAddContract} onOpenChange={setShowAddContract}>
+        <DialogContent className="max-w-[75vw] w-[75vw] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nowa umowa</DialogTitle>
+            <DialogDescription>
+              Wypełnij dane nowej umowy
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tytuł umowy *</Label>
+                <Input placeholder="np. Umowa o świadczenie usług księgowych" />
+              </div>
+              <div className="space-y-2">
+                <Label>Typ umowy *</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wybierz typ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="service">Usługowe</SelectItem>
+                    <SelectItem value="employment">Umowa o pracę</SelectItem>
+                    <SelectItem value="cooperation">Współpracy</SelectItem>
+                    <SelectItem value="maintenance">Serwisowe</SelectItem>
+                    <SelectItem value="lease">Dzierżawy</SelectItem>
+                    <SelectItem value="other">Inne</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Numer umowy *</Label>
+                <Input placeholder="UMW/2024/XXX" />
+              </div>
+              <div className="space-y-2">
+                <Label>Klient/Kontrahent</Label>
+                <Input placeholder="Nazwa klienta" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Data podpisania</Label>
+                <Input type="date" />
+              </div>
+              <div className="space-y-2">
+                <Label>Data rozpoczęcia *</Label>
+                <Input type="date" />
+              </div>
+              <div className="space-y-2">
+                <Label>Data zakończenia *</Label>
+                <Input type="date" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Wartość umowy</Label>
+                <Input type="number" placeholder="0.00" />
+              </div>
+              <div className="space-y-2">
+                <Label>Waluta</Label>
+                <Select defaultValue="PLN">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PLN">PLN</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Opis</Label>
+              <Textarea 
+                placeholder="Szczegóły umowy, zakres obowiązków, warunki..."
+                rows={4}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2">
+                <Switch id="auto-renewal" />
+                <Label htmlFor="auto-renewal">Automatyczne przedłużenie</Label>
+              </div>
+              <div className="space-y-2">
+                <Label>Dni przypomnienia przed wygaśnięciem</Label>
+                <Input type="number" defaultValue="30" />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setShowAddContract(false)}>
+                Anuluj
+              </Button>
+              <Button onClick={() => {
+                toast.success("Umowa została dodana");
+                setShowAddContract(false);
+              }}>
+                Zapisz umowę
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

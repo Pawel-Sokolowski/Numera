@@ -123,7 +123,7 @@ export function PdfFieldDetectorDialog({ open, onOpenChange }: PdfFieldDetectorD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-[75vw] w-[75vw] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Automated PDF Field Detection</DialogTitle>
           <DialogDescription>

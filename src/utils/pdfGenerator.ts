@@ -71,10 +71,21 @@ export class PDFInvoiceGenerator {
     this.pdf.setFont('helvetica', 'bold');
     this.pdf.text('Nabywca:', 20, 90);
     this.pdf.setFont('helvetica', 'normal');
-    const clientName = `${client.firstName} ${client.lastName}`;
-    this.pdf.text(clientName, 20, 100);
-    if (client.company) this.pdf.text(client.company, 20, 110);
-    if (client.address) this.pdf.text(client.address, 20, 120);
+    const clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim();
+    if (clientName) this.pdf.text(clientName, 20, 100);
+    const companyName = client.companyName || client.company;
+    if (companyName) this.pdf.text(companyName, 20, 110);
+    
+    // Format address
+    if (client.address) {
+      const addressParts = [
+        client.address.street,
+        client.address.city && client.address.zipCode ? `${client.address.zipCode} ${client.address.city}` : client.address.city || client.address.zipCode
+      ].filter(Boolean);
+      if (addressParts.length > 0) {
+        this.pdf.text(addressParts.join(', '), 20, 120);
+      }
+    }
     if (client.nip) this.pdf.text(`NIP: ${client.nip}`, 20, 130);
 
     // Items table
@@ -130,10 +141,21 @@ export class PDFInvoiceGenerator {
     this.pdf.setFont('helvetica', 'bold');
     this.pdf.text('Nabywca:', 20, 60);
     this.pdf.setFont('helvetica', 'normal');
-    const clientName = `${client.firstName} ${client.lastName}`;
-    this.pdf.text(clientName, 20, 70);
-    if (client.company) this.pdf.text(client.company, 20, 77);
-    if (client.address) this.pdf.text(client.address, 20, 84);
+    const clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim();
+    if (clientName) this.pdf.text(clientName, 20, 70);
+    const companyName = client.companyName || client.company;
+    if (companyName) this.pdf.text(companyName, 20, 77);
+    
+    // Format address
+    if (client.address) {
+      const addressParts = [
+        client.address.street,
+        client.address.city && client.address.zipCode ? `${client.address.zipCode} ${client.address.city}` : client.address.city || client.address.zipCode
+      ].filter(Boolean);
+      if (addressParts.length > 0) {
+        this.pdf.text(addressParts.join(', '), 20, 84);
+      }
+    }
     if (client.nip) this.pdf.text(`NIP: ${client.nip}`, 20, 91);
 
     // Items table with blue theme
@@ -182,8 +204,9 @@ export class PDFInvoiceGenerator {
     this.pdf.text(`${invoice.number} | ${new Date(invoice.issueDate).toLocaleDateString('pl-PL')} | Termin: ${new Date(invoice.dueDate).toLocaleDateString('pl-PL')}`, 20, 50);
 
     // Simple client info
-    const clientName = `${client.firstName} ${client.lastName}`;
-    this.pdf.text(`Do: ${clientName}${client.company ? `, ${client.company}` : ''}${client.nip ? ` (NIP: ${client.nip})` : ''}`, 20, 65);
+    const clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim();
+    const companyName = client.companyName || client.company;
+    this.pdf.text(`Do: ${clientName}${companyName ? `, ${companyName}` : ''}${client.nip ? ` (NIP: ${client.nip})` : ''}`, 20, 65);
 
     // Minimal table
     const tableData = invoice.items.map((item, index) => [

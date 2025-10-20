@@ -255,7 +255,7 @@ export function UserManagement() {
                   Dodaj Użytkownika
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl">
+              <DialogContent className="max-w-[75vw] w-[75vw]">
                 <DialogHeader>
                   <DialogTitle>Dodaj nowego użytkownika</DialogTitle>
                   <DialogDescription>
@@ -440,7 +440,7 @@ export function UserManagement() {
 
           {/* Edit User Dialog */}
           <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-[75vw] w-[75vw] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Edytuj użytkownika</DialogTitle>
                 <DialogDescription>Zaktualizuj dane użytkownika i uprawnienia</DialogDescription>

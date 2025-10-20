@@ -442,7 +442,7 @@ export function AdvancedCalendar({ currentUser, allUsers }: AdvancedCalendarProp
 
       {/* Dialog dodawania/edycji wydarzenia */}
       <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[75vw] w-[75vw]">
           <DialogHeader>
             <DialogTitle>
               {isNewEvent ? 'Dodaj nowe wydarzenie' : 'Edytuj wydarzenie'}

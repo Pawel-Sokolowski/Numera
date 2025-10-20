@@ -698,7 +698,7 @@ export function EnhancedEmailCenter({
 
       {/* Dialog nowej wiadomości */}
       <Dialog open={isComposing} onOpenChange={setIsComposing}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-[75vw] w-[75vw]">
           <DialogHeader>
             <DialogTitle>Nowa wiadomość</DialogTitle>
           </DialogHeader>
@@ -804,7 +804,7 @@ export function EnhancedEmailCenter({
 
       {/* Dialog ustawień kont email */}
       <Dialog open={isAccountSettingsOpen} onOpenChange={setIsAccountSettingsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[75vw] w-[75vw]">
           <DialogHeader>
             <DialogTitle>Konta email</DialogTitle>
             <DialogDescription>
