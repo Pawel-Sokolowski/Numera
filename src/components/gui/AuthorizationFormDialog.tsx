@@ -1,23 +1,24 @@
-import { useState, useMemo } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Button } from "../ui/button";
-import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { FileText, Download, Info, Eye } from "lucide-react";
-import { Client, User } from "../../types/client";
-import { 
-  AuthorizationFormGenerator, 
-  FormType, 
-  FormCategory, 
+import { useState, useMemo } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Checkbox } from '../ui/checkbox';
+import { FileText, Info, Eye } from 'lucide-react';
+import { Client, User } from '../../types/client';
+import {
+  AuthorizationFormGenerator,
+  FormType,
+  FormCategory,
   FORM_METADATA,
-  getFormsByCategory 
-} from "../../utils/authorizationFormGenerator";
+  getFormsByCategory,
+} from '../../utils/authorizationFormGenerator';
 import { toast } from 'sonner';
-import { Badge } from "../ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { FillableFormPreview } from "./FillableFormPreview";
-import { PdfPreviewPopup } from "./PdfPreviewPopup";
-import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
+import { Badge } from '../ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { FillableFormPreview } from './FillableFormPreview';
+import { PdfPreviewPopup } from './PdfPreviewPopup';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 
 interface AuthorizationFormDialogProps {
   isOpen: boolean;
@@ -27,12 +28,12 @@ interface AuthorizationFormDialogProps {
   preSelectedClientId?: string;
 }
 
-export function AuthorizationFormDialog({ 
-  isOpen, 
-  onClose, 
-  clients, 
+export function AuthorizationFormDialog({
+  isOpen,
+  onClose,
+  clients,
   employees,
-  preSelectedClientId 
+  preSelectedClientId,
 }: AuthorizationFormDialogProps) {
   const [selectedClientId, setSelectedClientId] = useState<string>(preSelectedClientId || '');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
@@ -44,6 +45,7 @@ export function AuthorizationFormDialog({
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string>('');
   const [pdfCleanup, setPdfCleanup] = useState<(() => void) | null>(null);
+  const [keepFieldsEditable, setKeepFieldsEditable] = useState<boolean>(false);
 
   // Get forms by category
   const categorizedForms = useMemo(() => {
@@ -52,25 +54,29 @@ export function AuthorizationFormDialog({
 
   // Get complexity badge color
   const getComplexityColor = (complexity: string) => {
-    switch(complexity) {
-      case 'simple': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'complex': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+    switch (complexity) {
+      case 'simple':
+        return 'bg-green-100 text-green-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'complex':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const handleOpenFormPreview = () => {
     if (!selectedClientId || !selectedEmployeeId) {
-      toast.error("Wybierz klienta i pracownika");
+      toast.error('Wybierz klienta i pracownika');
       return;
     }
 
-    const client = clients.find(c => c.id === selectedClientId);
-    const employee = employees.find(e => e.id === selectedEmployeeId);
+    const client = clients.find((c) => c.id === selectedClientId);
+    const employee = employees.find((e) => e.id === selectedEmployeeId);
 
     if (!client || !employee) {
-      toast.error("Nie znaleziono wybranego klienta lub pracownika");
+      toast.error('Nie znaleziono wybranego klienta lub pracownika');
       return;
     }
 
@@ -80,15 +86,15 @@ export function AuthorizationFormDialog({
 
   const handleDirectPdfPreview = async () => {
     if (!selectedClientId || !selectedEmployeeId) {
-      toast.error("Wybierz klienta i pracownika");
+      toast.error('Wybierz klienta i pracownika');
       return;
     }
 
-    const client = clients.find(c => c.id === selectedClientId);
-    const employee = employees.find(e => e.id === selectedEmployeeId);
+    const client = clients.find((c) => c.id === selectedClientId);
+    const employee = employees.find((e) => e.id === selectedEmployeeId);
 
     if (!client || !employee) {
-      toast.error("Nie znaleziono wybranego klienta lub pracownika");
+      toast.error('Nie znaleziono wybranego klienta lub pracownika');
       return;
     }
 
@@ -108,18 +114,20 @@ export function AuthorizationFormDialog({
         formType,
         additionalData: {
           startDate: new Date().toLocaleDateString('pl-PL'),
-          scope: 'Reprezentowanie przed Urzędem Skarbowym w sprawach podatkowych'
-        }
+          scope: 'Reprezentowanie przed Urzędem Skarbowym w sprawach podatkowych',
+        },
       });
 
       setPdfPreviewUrl(url);
       setPdfFileName(fileName);
       setPdfCleanup(() => cleanup);
       setShowPdfPreview(true);
-      toast.success("PDF został wygenerowany - możesz teraz wypełnić puste pola");
+      toast.success('PDF został wygenerowany - możesz teraz wypełnić puste pola');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error(`Błąd podczas generowania: ${error instanceof Error ? error.message : 'Nieznany błąd'}`);
+      toast.error(
+        `Błąd podczas generowania: ${error instanceof Error ? error.message : 'Nieznany błąd'}`
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -131,11 +139,11 @@ export function AuthorizationFormDialog({
   };
 
   const handleGenerateFromPreview = async (updatedFields: Record<string, string>) => {
-    const client = clients.find(c => c.id === selectedClientId);
-    const employee = employees.find(e => e.id === selectedEmployeeId);
+    const client = clients.find((c) => c.id === selectedClientId);
+    const employee = employees.find((e) => e.id === selectedEmployeeId);
 
     if (!client || !employee) {
-      throw new Error("Nie znaleziono wybranego klienta lub pracownika");
+      throw new Error('Nie znaleziono wybranego klienta lub pracownika');
     }
 
     // Create updated client and employee objects with form data
@@ -161,21 +169,25 @@ export function AuthorizationFormDialog({
     };
 
     const generator = new AuthorizationFormGenerator();
-    await generator.downloadForm({
-      client: updatedClient,
-      employee: updatedEmployee,
-      formType,
-      additionalData: {
-        scope: updatedFields.scope,
-        startDate: updatedFields.startDate,
-        endDate: updatedFields.endDate,
-        taxOffice: updatedFields.taxOffice,
-        period: updatedFields.period,
-        year: updatedFields.taxYear,
-      }
-    });
+    await generator.downloadForm(
+      {
+        client: updatedClient,
+        employee: updatedEmployee,
+        formType,
+        additionalData: {
+          scope: updatedFields.scope,
+          startDate: updatedFields.startDate,
+          endDate: updatedFields.endDate,
+          taxOffice: updatedFields.taxOffice,
+          period: updatedFields.period,
+          year: updatedFields.taxYear,
+        },
+      },
+      keepFieldsEditable
+    );
 
     // Reset form after successful generation
+    // eslint-disable-next-line no-undef
     setTimeout(() => {
       setSelectedClientId(preSelectedClientId || '');
       setSelectedEmployeeId('');
@@ -195,24 +207,34 @@ export function AuthorizationFormDialog({
             Generuj formularze podatkowe i dokumenty
           </DialogTitle>
           <DialogDescription>
-            Automatyczne generowanie dokumentów: pełnomocnictw, deklaracji podatkowych (PIT, VAT, CIT), ZUS i JPK
+            Automatyczne generowanie dokumentów: pełnomocnictw, deklaracji podatkowych (PIT, VAT,
+            CIT), ZUS i JPK
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Category tabs - horizontal layout with prominent main categories */}
-          <Tabs value={selectedCategory} onValueChange={(value) => {
-            setSelectedCategory(value as FormCategory);
-            // Set default form for category
-            const forms = getFormsByCategory(value as FormCategory);
-            if (forms.length > 0) {
-              setFormType(forms[0].type);
-            }
-          }}>
+          <Tabs
+            value={selectedCategory}
+            onValueChange={(value) => {
+              setSelectedCategory(value as FormCategory);
+              // Set default form for category
+              const forms = getFormsByCategory(value as FormCategory);
+              if (forms.length > 0) {
+                setFormType(forms[0].type);
+              }
+            }}
+          >
             <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-2 sticky top-0 z-10 bg-background p-2">
-              <TabsTrigger value="pelnomocnictwa" className="font-semibold">Pełnomocnictwa</TabsTrigger>
-              <TabsTrigger value="pit" className="font-semibold">PIT</TabsTrigger>
-              <TabsTrigger value="vat" className="font-semibold">VAT</TabsTrigger>
+              <TabsTrigger value="pelnomocnictwa" className="font-semibold">
+                Pełnomocnictwa
+              </TabsTrigger>
+              <TabsTrigger value="pit" className="font-semibold">
+                PIT
+              </TabsTrigger>
+              <TabsTrigger value="vat" className="font-semibold">
+                VAT
+              </TabsTrigger>
               <TabsTrigger value="cit">CIT</TabsTrigger>
               <TabsTrigger value="zus">ZUS</TabsTrigger>
               <TabsTrigger value="jpk">JPK</TabsTrigger>
@@ -236,9 +258,7 @@ export function AuthorizationFormDialog({
                             {form.complexity === 'complex' && 'Zaawansowany'}
                           </Badge>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {form.description}
-                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">{form.description}</div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -251,9 +271,12 @@ export function AuthorizationFormDialog({
                       <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="font-medium text-blue-900">{FORM_METADATA[formType].name}</p>
-                        <p className="text-blue-700 text-xs mt-1">{FORM_METADATA[formType].description}</p>
+                        <p className="text-blue-700 text-xs mt-1">
+                          {FORM_METADATA[formType].description}
+                        </p>
                         <div className="mt-2 text-xs text-blue-600">
-                          <strong>Wymagane pola:</strong> {FORM_METADATA[formType].requiredFields.join(', ')}
+                          <strong>Wymagane pola:</strong>{' '}
+                          {FORM_METADATA[formType].requiredFields.join(', ')}
                         </div>
                       </div>
                     </div>
@@ -273,7 +296,9 @@ export function AuthorizationFormDialog({
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     <div className="flex flex-col items-start">
-                      <span>{client.firstName} {client.lastName}</span>
+                      <span>
+                        {client.firstName} {client.lastName}
+                      </span>
                       {client.companyName && (
                         <span className="text-xs text-muted-foreground">{client.companyName}</span>
                       )}
@@ -294,7 +319,9 @@ export function AuthorizationFormDialog({
                 {employees.map((employee) => (
                   <SelectItem key={employee.id} value={employee.id}>
                     <div className="flex flex-col items-start">
-                      <span>{employee.firstName} {employee.lastName}</span>
+                      <span>
+                        {employee.firstName} {employee.lastName}
+                      </span>
                       {employee.position && (
                         <span className="text-xs text-muted-foreground">{employee.position}</span>
                       )}
@@ -308,11 +335,24 @@ export function AuthorizationFormDialog({
           <div className="rounded-lg bg-muted p-4 text-sm space-y-1">
             <p className="font-medium">Informacja o systemie pre-fillingu:</p>
             <p className="text-muted-foreground text-xs">
-              <strong>Formularze proste</strong> (np. ZAW-FA) - wypełniane są tylko podstawowe dane klienta i pracownika
+              <strong>Formularze proste</strong> (np. ZAW-FA) - wypełniane są tylko podstawowe dane
+              klienta i pracownika
             </p>
             <p className="text-muted-foreground text-xs">
-              <strong>Formularze zaawansowane</strong> (np. PIT-36, CIT-8) - wypełniane są wszystkie dostępne dane klienta
+              <strong>Formularze zaawansowane</strong> (np. PIT-36, CIT-8) - wypełniane są wszystkie
+              dostępne dane klienta
             </p>
+          </div>
+
+          <div className="flex items-center space-x-2 rounded-lg border p-4">
+            <Checkbox
+              id="keepFieldsEditable"
+              checked={keepFieldsEditable}
+              onCheckedChange={(checked) => setKeepFieldsEditable(checked === true)}
+            />
+            <Label htmlFor="keepFieldsEditable" className="text-sm font-normal cursor-pointer">
+              Zachowaj pola formularza edytowalne (umożliwia późniejsze uzupełnianie pól w PDF)
+            </Label>
           </div>
         </div>
 
@@ -323,9 +363,9 @@ export function AuthorizationFormDialog({
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
-                <Button 
-                  variant="secondary" 
-                  onClick={handleDirectPdfPreview} 
+                <Button
+                  variant="secondary"
+                  onClick={handleDirectPdfPreview}
                   disabled={isGenerating || !selectedClientId || !selectedEmployeeId}
                 >
                   <Eye className="mr-2 h-4 w-4" />
@@ -342,8 +382,8 @@ export function AuthorizationFormDialog({
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
-                <Button 
-                  onClick={handleOpenFormPreview} 
+                <Button
+                  onClick={handleOpenFormPreview}
                   disabled={isGenerating || !selectedClientId || !selectedEmployeeId}
                 >
                   <FileText className="mr-2 h-4 w-4" />
@@ -365,8 +405,8 @@ export function AuthorizationFormDialog({
         <FillableFormPreview
           isOpen={showFormPreview}
           onClose={() => setShowFormPreview(false)}
-          client={clients.find(c => c.id === selectedClientId)!}
-          employee={employees.find(e => e.id === selectedEmployeeId)!}
+          client={clients.find((c) => c.id === selectedClientId)!}
+          employee={employees.find((e) => e.id === selectedEmployeeId)!}
           formType={formType}
           onGenerate={handleGenerateFromPreview}
         />

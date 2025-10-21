@@ -1,13 +1,22 @@
-import { PDFDocument, StandardFonts, rgb, PDFForm, PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown } from 'pdf-lib';
+import {
+  PDFDocument,
+  StandardFonts,
+  rgb,
+  PDFForm,
+  PDFTextField,
+  PDFCheckBox,
+  PDFRadioGroup,
+  PDFDropdown,
+} from 'pdf-lib';
 
 /**
  * Universal PDF Form Filler
- * 
+ *
  * Automatically fills ANY PDF form using:
  * 1. Acroform field detection (for interactive PDFs)
  * 2. Intelligent coordinate-based placement (for flat PDFs)
  * 3. Smart field matching and validation
- * 
+ *
  * Works with any Polish government form, business form, or custom PDF.
  */
 
@@ -22,6 +31,8 @@ export interface FillingOptions {
   smartPositioning?: boolean;
   fuzzyMatching?: boolean;
   validateFields?: boolean;
+  /** If true, keeps form fields editable instead of flattening them */
+  keepFieldsEditable?: boolean;
 }
 
 export interface FillingResult {
@@ -42,6 +53,7 @@ export class UniversalPdfFiller {
     smartPositioning: true,
     fuzzyMatching: true,
     validateFields: true,
+    keepFieldsEditable: false,
   };
 
   /**
@@ -84,7 +96,10 @@ export class UniversalPdfFiller {
         await this.fillCoordinateBasedFields(pdfDoc, data, opts, result);
       }
 
-      const filledPdfBytes = await pdfDoc.save();
+      // Save with or without flattening based on options
+      const filledPdfBytes = opts.keepFieldsEditable
+        ? await pdfDoc.save({ useObjectStreams: false })
+        : await pdfDoc.save();
       result.success = true;
 
       return { pdfBytes: filledPdfBytes, result };
@@ -148,7 +163,9 @@ export class UniversalPdfFiller {
           result.warnings.push(`Unknown field type for: ${fieldName}`);
         }
       } catch (error) {
-        result.errors.push(`Error filling field: ${error instanceof Error ? error.message : 'Unknown'}`);
+        result.errors.push(
+          `Error filling field: ${error instanceof Error ? error.message : 'Unknown'}`
+        );
         result.fieldsSkipped++;
       }
     }
@@ -202,7 +219,9 @@ export class UniversalPdfFiller {
         result.fieldsFilled++;
         positionIndex++;
       } catch (error) {
-        result.errors.push(`Error drawing text for ${key}: ${error instanceof Error ? error.message : 'Unknown'}`);
+        result.errors.push(
+          `Error drawing text for ${key}: ${error instanceof Error ? error.message : 'Unknown'}`
+        );
         result.fieldsSkipped++;
       }
     }
@@ -213,15 +232,24 @@ export class UniversalPdfFiller {
    */
   private sanitizeText(text: string): string {
     const polishCharMap: Record<string, string> = {
-      'ą': 'a', 'Ą': 'A',
-      'ć': 'c', 'Ć': 'C',
-      'ę': 'e', 'Ę': 'E',
-      'ł': 'l', 'Ł': 'L',
-      'ń': 'n', 'Ń': 'N',
-      'ó': 'o', 'Ó': 'O',
-      'ś': 's', 'Ś': 'S',
-      'ź': 'z', 'Ź': 'Z',
-      'ż': 'z', 'Ż': 'Z',
+      ą: 'a',
+      Ą: 'A',
+      ć: 'c',
+      Ć: 'C',
+      ę: 'e',
+      Ę: 'E',
+      ł: 'l',
+      Ł: 'L',
+      ń: 'n',
+      Ń: 'N',
+      ó: 'o',
+      Ó: 'O',
+      ś: 's',
+      Ś: 'S',
+      ź: 'z',
+      Ź: 'Z',
+      ż: 'z',
+      Ż: 'Z',
     };
 
     let sanitized = text;
@@ -230,6 +258,7 @@ export class UniversalPdfFiller {
     }
 
     // Remove control characters
+    // eslint-disable-next-line no-control-regex
     return sanitized.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
   }
 
@@ -243,8 +272,15 @@ export class UniversalPdfFiller {
         .replace(/[_\-\s]/g, '')
         .replace(/[ąćęłńóśźż]/g, (char) => {
           const map: Record<string, string> = {
-            'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
-            'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
+            ą: 'a',
+            ć: 'c',
+            ę: 'e',
+            ł: 'l',
+            ń: 'n',
+            ó: 'o',
+            ś: 's',
+            ź: 'z',
+            ż: 'z',
           };
           return map[char] || char;
         });
@@ -272,7 +308,10 @@ export class UniversalPdfFiller {
   /**
    * Calculate smart field positions
    */
-  private calculateSmartPositions(pageHeight: number, fieldCount: number): Array<{ x: number; y: number }> {
+  private calculateSmartPositions(
+    pageHeight: number,
+    fieldCount: number
+  ): Array<{ x: number; y: number }> {
     const positions: Array<{ x: number; y: number }> = [];
     const leftMargin = 150;
     const rightMargin = 350;
@@ -284,7 +323,7 @@ export class UniversalPdfFiller {
     for (let i = 0; i < maxFieldsPerColumn && positions.length < fieldCount; i++) {
       positions.push({
         x: leftMargin,
-        y: topStart - (i * lineHeight),
+        y: topStart - i * lineHeight,
       });
     }
 
@@ -292,7 +331,7 @@ export class UniversalPdfFiller {
     for (let i = 0; i < maxFieldsPerColumn && positions.length < fieldCount; i++) {
       positions.push({
         x: rightMargin,
-        y: topStart - (i * lineHeight),
+        y: topStart - i * lineHeight,
       });
     }
 
@@ -302,7 +341,10 @@ export class UniversalPdfFiller {
   /**
    * Calculate basic positions (single column)
    */
-  private calculateBasicPositions(pageHeight: number, fieldCount: number): Array<{ x: number; y: number }> {
+  private calculateBasicPositions(
+    pageHeight: number,
+    fieldCount: number
+  ): Array<{ x: number; y: number }> {
     const positions: Array<{ x: number; y: number }> = [];
     const leftMargin = 150;
     const topStart = pageHeight - 150;
@@ -311,7 +353,7 @@ export class UniversalPdfFiller {
     for (let i = 0; i < fieldCount; i++) {
       positions.push({
         x: leftMargin,
-        y: topStart - (i * lineHeight),
+        y: topStart - i * lineHeight,
       });
     }
 
@@ -342,7 +384,7 @@ export class UniversalPdfFiller {
       },
       hasAcroform: fields.length > 0,
       fieldCount: fields.length,
-      fields: fields.map(field => ({
+      fields: fields.map((field) => ({
         name: field.getName(),
         type: field.constructor.name,
       })),
