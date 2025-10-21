@@ -173,6 +173,7 @@ export class UniversalPdfFiller {
 
   /**
    * Fill coordinate-based fields
+   * Supports multi-page forms by distributing fields across pages if coordinates specify page numbers
    */
   private async fillCoordinateBasedFields(
     pdfDoc: PDFDocument,
@@ -181,48 +182,96 @@ export class UniversalPdfFiller {
     result: FillingResult
   ): Promise<void> {
     const pages = pdfDoc.getPages();
-    const firstPage = pages[0];
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontSize = options.fontSize || 10;
     const color = options.fontColor || { r: 0, g: 0, b: 0 };
 
-    // Calculate smart positions
-    const positions = options.smartPositioning
-      ? this.calculateSmartPositions(firstPage.getHeight(), Object.keys(data).length)
-      : this.calculateBasicPositions(firstPage.getHeight(), Object.keys(data).length);
-
-    let positionIndex = 0;
     result.fieldsDetected = Object.keys(data).length;
 
-    for (const [key, value] of Object.entries(data)) {
-      try {
-        if (positionIndex >= positions.length) {
-          result.warnings.push(`No position available for field: ${key}`);
+    // Check if data contains coordinate information with page numbers
+    const hasCoordinates = Object.values(data).some(
+      (value) => typeof value === 'object' && value !== null && 'x' in value && 'y' in value
+    );
+
+    if (hasCoordinates) {
+      // Use provided coordinates with multi-page support
+      for (const [key, value] of Object.entries(data)) {
+        try {
+          if (typeof value === 'object' && value !== null && 'x' in value && 'y' in value) {
+            const coord = value as any;
+            const pageIndex = (coord.page || 1) - 1; // Default to page 1 if not specified
+
+            if (pageIndex < 0 || pageIndex >= pages.length) {
+              result.warnings.push(`Invalid page ${coord.page} for field: ${key}`);
+              result.fieldsSkipped++;
+              continue;
+            }
+
+            const page = pages[pageIndex];
+            let text = String(coord.value || coord.text || '');
+            if (options.sanitizePolishChars) {
+              text = this.sanitizeText(text);
+            }
+
+            page.drawText(text, {
+              x: coord.x,
+              y: coord.y,
+              size: fontSize,
+              font: font,
+              color: rgb(color.r, color.g, color.b),
+            });
+
+            result.fieldsFilled++;
+          } else {
+            result.warnings.push(`No coordinates for field: ${key}`);
+            result.fieldsSkipped++;
+          }
+        } catch (error) {
+          result.errors.push(
+            `Error filling field ${key}: ${error instanceof Error ? error.message : 'Unknown'}`
+          );
           result.fieldsSkipped++;
-          continue;
         }
+      }
+    } else {
+      // Fallback to smart positioning on first page
+      const firstPage = pages[0];
+      const positions = options.smartPositioning
+        ? this.calculateSmartPositions(firstPage.getHeight(), Object.keys(data).length)
+        : this.calculateBasicPositions(firstPage.getHeight(), Object.keys(data).length);
 
-        let text = String(value);
-        if (options.sanitizePolishChars) {
-          text = this.sanitizeText(text);
+      let positionIndex = 0;
+
+      for (const [key, value] of Object.entries(data)) {
+        try {
+          if (positionIndex >= positions.length) {
+            result.warnings.push(`No position available for field: ${key}`);
+            result.fieldsSkipped++;
+            continue;
+          }
+
+          let text = String(value);
+          if (options.sanitizePolishChars) {
+            text = this.sanitizeText(text);
+          }
+
+          const pos = positions[positionIndex];
+          firstPage.drawText(text, {
+            x: pos.x,
+            y: pos.y,
+            size: fontSize,
+            font: font,
+            color: rgb(color.r, color.g, color.b),
+          });
+
+          result.fieldsFilled++;
+          positionIndex++;
+        } catch (error) {
+          result.errors.push(
+            `Error drawing text for ${key}: ${error instanceof Error ? error.message : 'Unknown'}`
+          );
+          result.fieldsSkipped++;
         }
-
-        const pos = positions[positionIndex];
-        firstPage.drawText(text, {
-          x: pos.x,
-          y: pos.y,
-          size: fontSize,
-          font: font,
-          color: rgb(color.r, color.g, color.b),
-        });
-
-        result.fieldsFilled++;
-        positionIndex++;
-      } catch (error) {
-        result.errors.push(
-          `Error drawing text for ${key}: ${error instanceof Error ? error.message : 'Unknown'}`
-        );
-        result.fieldsSkipped++;
       }
     }
   }

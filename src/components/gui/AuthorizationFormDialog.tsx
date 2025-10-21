@@ -39,6 +39,7 @@ export function AuthorizationFormDialog({
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [formType, setFormType] = useState<FormType>('UPL-1');
   const [selectedCategory, setSelectedCategory] = useState<FormCategory>('pelnomocnictwa');
+  const [keepFieldsEditable, setKeepFieldsEditable] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showFormPreview, setShowFormPreview] = useState(false);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
@@ -187,8 +188,7 @@ export function AuthorizationFormDialog({
     );
 
     // Reset form after successful generation
-    // eslint-disable-next-line no-undef
-    setTimeout(() => {
+    window.setTimeout(() => {
       setSelectedClientId(preSelectedClientId || '');
       setSelectedEmployeeId('');
       setFormType('UPL-1');
@@ -330,6 +330,17 @@ export function AuthorizationFormDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="keep-editable"
+              checked={keepFieldsEditable}
+              onCheckedChange={(checked) => setKeepFieldsEditable(checked === true)}
+            />
+            <Label htmlFor="keep-editable" className="text-sm cursor-pointer">
+              Zachowaj pola edytowalne (możesz wypełnić pozostałe pola w PDF)
+            </Label>
           </div>
 
           <div className="rounded-lg bg-muted p-4 text-sm space-y-1">

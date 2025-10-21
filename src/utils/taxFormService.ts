@@ -235,6 +235,7 @@ export class TaxFormService {
 
   /**
    * Fill PDF form using mappings and processed data
+   * Supports multi-page forms by respecting page numbers in field mappings
    */
   private async fillPdfForm(
     pdfDoc: PDFDocument,
@@ -265,17 +266,20 @@ export class TaxFormService {
     };
 
     // Iterate through field mappings and fill the form
+    // Multi-page support: Each field mapping specifies its page number
     for (const [fieldName, fieldMapping] of Object.entries(mappings.fields)) {
       const value = allData[fieldName];
 
       if (value !== undefined && value !== null) {
-        const pageIndex = fieldMapping.page - 1; // Convert to 0-based index
+        // Field mapping page is 1-based, convert to 0-based index
+        const pageIndex = fieldMapping.page - 1;
 
         if (pageIndex < 0 || pageIndex >= pages.length) {
           console.warn(`Invalid page index ${fieldMapping.page} for field ${fieldName}`);
           continue;
         }
 
+        // Get the correct page for this field
         const page = pages[pageIndex];
         const textValue = this.formatFieldValue(value);
 

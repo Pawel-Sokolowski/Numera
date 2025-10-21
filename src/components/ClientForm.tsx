@@ -29,6 +29,7 @@ import {
   CEIDGCompanyData,
   AutoInvoiceItem,
 } from '../types/client';
+import { TaxOfficeSelector } from './TaxOfficeSelector';
 import { toast } from 'sonner';
 import {
   validateEmail,
@@ -90,6 +91,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       ryczaltEwidencyjny: false,
       other: '',
     },
+    taxOffice: client?.taxOffice || '',
     zusInfo: client?.zusInfo || {
       malyZus: false,
       pelnyZus: false,
@@ -380,6 +382,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       businessType: formData.businessType,
       taxType: formData.taxType,
       accountingType: formData.accountingType,
+      taxOffice: formData.taxOffice,
       zusInfo: {
         ...formData.zusInfo,
         calculatedEndDate: formData.zusInfo.startDate
@@ -786,6 +789,23 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                 placeholder="Opisz inną formę rozliczenia"
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Tax Office Selector */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Urząd Skarbowy
+            </CardTitle>
+            <CardDescription>Wybierz właściwy urząd skarbowy dla klienta</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TaxOfficeSelector
+              value={formData.taxOffice}
+              onChange={(value) => setFormData({ ...formData, taxOffice: value })}
+            />
           </CardContent>
         </Card>
 
