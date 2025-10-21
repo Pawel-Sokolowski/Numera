@@ -1,9 +1,13 @@
 import { createWorker, Worker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set up PDF.js worker
+// Set up PDF.js worker - use local worker file instead of CDN
+// The worker file is copied from node_modules/pdfjs-dist/build/pdf.worker.min.mjs to public/
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.269/pdf.worker.min.js`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    '/pdf.worker.min.mjs',
+    window.location.origin
+  ).href;
 }
 
 /**
