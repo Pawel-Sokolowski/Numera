@@ -57,6 +57,17 @@ const passwordResetSpeedLimiter = slowDown({
   maxDelayMs: 10000, // Maximum delay of 10 seconds
 });
 
+// General API rate limiter for authenticated endpoints
+const generalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs for general API calls
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Login validation schema
 const loginSchema = {
   email: {
@@ -203,7 +214,7 @@ const verifyToken = (req, res, next) => {
 };
 
 // Get current user
-router.get('/me', verifyToken, async (req, res) => {
+router.get('/me', generalApiLimiter, verifyToken, async (req, res) => {
   try {
     const userQuery = 'SELECT * FROM users WHERE id = $1';
     const result = await pool.query(userQuery, [req.user.userId]);
