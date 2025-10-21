@@ -46,6 +46,7 @@ export function AuthorizationFormDialog({
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string>('');
   const [pdfCleanup, setPdfCleanup] = useState<(() => void) | null>(null);
+  const [keepFieldsEditable, setKeepFieldsEditable] = useState<boolean>(false);
 
   // Get forms by category
   const categorizedForms = useMemo(() => {
