@@ -13,7 +13,7 @@ import { Label } from './ui/label';
 import { PdfFieldDetector, FieldDetectionResult, DetectedField } from '../utils/pdfFieldDetector';
 import { Loader2, Download, Eye, Edit2, Check, X } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
-import { cn } from '../lib/utils';
+import { cn } from './ui/utils';
 
 interface PdfFieldDetectorDialogProps {
   open: boolean;

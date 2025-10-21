@@ -1,50 +1,118 @@
-import { createWorker } from 'tesseract.js';
-import { getDocument } from 'pdfjs-dist';
+import { createWorker, Worker } from 'tesseract.js';
+import * as pdfjsLib from 'pdfjs-dist';
 
-// Core OCR service for detecting text and field positions in PDF forms
+// Set up PDF.js worker
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.269/pdf.worker.min.js`;
+}
+
+/**
+ * Field mapping interface for detected fields
+ */
+export interface FieldMapping {
+  label: string;
+  coordinates: {
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+  };
+  page: number;
+  confidence: number;
+}
+
+/**
+ * Core OCR service for detecting text and field positions in PDF forms
+ *
+ * @deprecated This class is a simplified version. Use PdfFieldDetector for production use.
+ * PdfFieldDetector provides enhanced detection with better accuracy and more features.
+ */
 export class PdfOcrDetector {
-    constructor() {
-        this.worker = createWorker();
-    }
+  private worker: Worker | null = null;
 
-    async init() {
-        await this.worker.load();
-        await this.worker.loadLanguage('eng+pol');
-        await this.worker.initialize('eng+pol');
-    }
+  constructor() {
+    // Worker will be initialized in init()
+  }
 
-    async detectFields(pdfUrl) {
-        const pdf = await getDocument(pdfUrl).promise;
-        const fieldMappings = [];
-
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1 });
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            await page.render({ canvasContext: context, viewport }).promise;
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
-            const { data: { text, words } } = await this.worker.recognize(imageData);
-
-            // Example field detection logic
-            words.forEach(word => {
-                if (/Nazwisko:|PESEL:|Adres:/.test(word.text)) {
-                    fieldMappings.push({
-                        label: word.text,
-                        coordinates: word.bbox
-                    });
-                }
-            });
+  /**
+   * Initialize the OCR worker
+   */
+  async init(): Promise<void> {
+    this.worker = await createWorker('pol', 1, {
+      logger: (m) => {
+        if (m.status === 'recognizing text') {
+          console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
         }
+      },
+    });
+  }
 
-        return fieldMappings;
+  /**
+   * Detect fields in a PDF document
+   * @param pdfUrl URL or ArrayBuffer of the PDF
+   * @returns Array of detected field mappings
+   */
+  async detectFields(pdfUrl: string | ArrayBuffer | Uint8Array): Promise<FieldMapping[]> {
+    if (!this.worker) {
+      throw new Error('OCR worker not initialized. Call init() first.');
     }
 
-    async terminate() {
-        await this.worker.terminate();
+    const loadingTask = pdfjsLib.getDocument(
+      typeof pdfUrl === 'string' ? pdfUrl : { data: pdfUrl }
+    );
+    const pdf = await loadingTask.promise;
+    const fieldMappings: FieldMapping[] = [];
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      if (!context) {
+        console.warn(`Could not get canvas context for page ${pageNum}`);
+        continue;
+      }
+
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      await page.render({ canvasContext: context, viewport }).promise;
+
+      const {
+        data: { words },
+      } = await this.worker.recognize(canvas);
+
+      // Example field detection logic - looks for common field labels
+      const fieldKeywords = /Nazwisko:|PESEL:|Adres:|NIP:|Imię:|Data:|Telefon:|Email:/i;
+
+      words?.forEach((word) => {
+        if (word.text && fieldKeywords.test(word.text)) {
+          fieldMappings.push({
+            label: word.text,
+            coordinates: {
+              x0: word.bbox.x0 / 2, // Scale back from 2x rendering
+              y0: word.bbox.y0 / 2,
+              x1: word.bbox.x1 / 2,
+              y1: word.bbox.y1 / 2,
+            },
+            page: pageNum,
+            confidence: word.confidence / 100,
+          });
+        }
+      });
     }
+
+    return fieldMappings;
+  }
+
+  /**
+   * Terminate the OCR worker
+   */
+  async terminate(): Promise<void> {
+    if (this.worker) {
+      await this.worker.terminate();
+      this.worker = null;
+    }
+  }
 }

@@ -1,46 +1,48 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  MessageSquare, 
-  Mail, 
-  FileText, 
-  Settings, 
-  CalendarDays, 
-  UserCog, 
-  MailOpen, 
-  FolderOpen, 
-  BarChart3, 
-  CreditCard, 
-  ScrollText, 
-  Building2, 
-  Timer, 
-  Clock, 
-  Zap 
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  MessageSquare,
+  Mail,
+  FileText,
+  Settings,
+  CalendarDays,
+  UserCog,
+  MailOpen,
+  FolderOpen,
+  BarChart3,
+  CreditCard,
+  ScrollText,
+  Building2,
+  Timer,
+  Clock,
+  Zap,
+  FileSearch,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-export type View = 
-  | 'dashboard' 
-  | 'clients' 
-  | 'add-client' 
-  | 'edit-client' 
-  | 'view-client' 
-  | 'chat' 
-  | 'email' 
-  | 'invoices' 
-  | 'calendar' 
-  | 'users' 
-  | 'email-templates' 
-  | 'invoice-templates' 
-  | 'profile' 
-  | 'documents' 
-  | 'monthly-data' 
-  | 'settings' 
-  | 'bank-integration' 
-  | 'contracts' 
-  | 'time-tracker' 
-  | 'work-time-report' 
-  | 'auto-invoicing';
+export type View =
+  | 'dashboard'
+  | 'clients'
+  | 'add-client'
+  | 'edit-client'
+  | 'view-client'
+  | 'chat'
+  | 'email'
+  | 'invoices'
+  | 'calendar'
+  | 'users'
+  | 'email-templates'
+  | 'invoice-templates'
+  | 'profile'
+  | 'documents'
+  | 'monthly-data'
+  | 'settings'
+  | 'bank-integration'
+  | 'contracts'
+  | 'time-tracker'
+  | 'work-time-report'
+  | 'auto-invoicing'
+  | 'field-detector';
 
 export interface MenuItem {
   title: string;
@@ -55,118 +57,123 @@ export interface MenuSection {
 
 export const menuSections: MenuSection[] = [
   {
-    label: "Zarządzanie Klientami",
+    label: 'Zarządzanie Klientami',
     items: [
       {
-        title: "Panel Główny",
+        title: 'Panel Główny',
         icon: LayoutDashboard,
-        view: 'dashboard'
+        view: 'dashboard',
       },
       {
-        title: "Wszyscy Klienci",
+        title: 'Wszyscy Klienci',
         icon: Users,
-        view: 'clients'
+        view: 'clients',
       },
       {
-        title: "Dokumenty",
+        title: 'Dokumenty',
         icon: FolderOpen,
-        view: 'documents'
+        view: 'documents',
       },
       {
-        title: "Dane Miesięczne",
+        title: 'Dane Miesięczne',
         icon: BarChart3,
-        view: 'monthly-data'
-      }
-    ]
+        view: 'monthly-data',
+      },
+    ],
   },
   {
-    label: "Komunikacja",
+    label: 'Komunikacja',
     items: [
       {
-        title: "Chat Zespołowy",
+        title: 'Chat Zespołowy',
         icon: MessageSquare,
-        view: 'chat'
+        view: 'chat',
       },
       {
-        title: "Centrum Email",
+        title: 'Centrum Email',
         icon: Mail,
-        view: 'email'
+        view: 'email',
       },
       {
-        title: "Kalendarz",
+        title: 'Kalendarz',
         icon: CalendarDays,
-        view: 'calendar'
-      }
-    ]
+        view: 'calendar',
+      },
+    ],
   },
   {
-    label: "Biznes",
+    label: 'Biznes',
     items: [
       {
-        title: "Faktury",
+        title: 'Faktury',
         icon: FileText,
-        view: 'invoices'
+        view: 'invoices',
       },
       {
-        title: "Automatyczne Faktury",
+        title: 'Automatyczne Faktury',
         icon: Zap,
-        view: 'auto-invoicing'
+        view: 'auto-invoicing',
       },
       {
-        title: "Szablony Faktur",
+        title: 'Szablony Faktur',
         icon: ScrollText,
-        view: 'invoice-templates'
+        view: 'invoice-templates',
       },
       {
-        title: "Integracja Bankowa",
+        title: 'Integracja Bankowa',
         icon: CreditCard,
-        view: 'bank-integration'
+        view: 'bank-integration',
       },
       {
-        title: "Zarządzanie Kontraktami",
+        title: 'Zarządzanie Kontraktami',
         icon: Building2,
-        view: 'contracts'
-      }
-    ]
+        view: 'contracts',
+      },
+    ],
   },
   {
-    label: "Organizacja",
+    label: 'Organizacja',
     items: [
       {
-        title: "Czasomierz",
+        title: 'Czasomierz',
         icon: Clock,
-        view: 'time-tracker'
+        view: 'time-tracker',
       },
       {
-        title: "Raport Czasu Pracy",
+        title: 'Raport Czasu Pracy',
         icon: Timer,
-        view: 'work-time-report'
+        view: 'work-time-report',
       },
       {
-        title: "Zarządzanie Personelem",
+        title: 'Zarządzanie Personelem',
         icon: UserCog,
-        view: 'users'
+        view: 'users',
       },
       {
-        title: "Szablony Email",
+        title: 'Szablony Email',
         icon: MailOpen,
-        view: 'email-templates'
-      }
-    ]
+        view: 'email-templates',
+      },
+    ],
   },
   {
-    label: "Ustawienia",
+    label: 'Ustawienia',
     items: [
       {
-        title: "Mój Profil",
+        title: 'Mój Profil',
         icon: UserCog,
-        view: 'profile'
+        view: 'profile',
       },
       {
-        title: "Preferencje",
+        title: 'Preferencje',
         icon: Settings,
-        view: 'settings'
-      }
-    ]
-  }
+        view: 'settings',
+      },
+      {
+        title: 'Detektor Pól PDF',
+        icon: FileSearch,
+        view: 'field-detector',
+      },
+    ],
+  },
 ];
