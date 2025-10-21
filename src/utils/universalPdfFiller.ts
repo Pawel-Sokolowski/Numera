@@ -31,6 +31,8 @@ export interface FillingOptions {
   smartPositioning?: boolean;
   fuzzyMatching?: boolean;
   validateFields?: boolean;
+  /** If true, keeps form fields editable instead of flattening them */
+  keepFieldsEditable?: boolean;
 }
 
 export interface FillingResult {
@@ -51,6 +53,7 @@ export class UniversalPdfFiller {
     smartPositioning: true,
     fuzzyMatching: true,
     validateFields: true,
+    keepFieldsEditable: false,
   };
 
   /**
@@ -93,7 +96,10 @@ export class UniversalPdfFiller {
         await this.fillCoordinateBasedFields(pdfDoc, data, opts, result);
       }
 
-      const filledPdfBytes = await pdfDoc.save();
+      // Save with or without flattening based on options
+      const filledPdfBytes = opts.keepFieldsEditable
+        ? await pdfDoc.save({ useObjectStreams: false })
+        : await pdfDoc.save();
       result.success = true;
 
       return { pdfBytes: filledPdfBytes, result };

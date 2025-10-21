@@ -270,7 +270,7 @@ export class AuthorizationFormGenerator {
 
     // Special handling for PEL - use template-based approach
     if (data.formType === 'PEL') {
-      return await this.generateFormFromTemplate(data);
+      return await this.generateFormFromTemplate(data, keepFieldsEditable);
     }
 
     // Use template-based filling for all forms that have templates
@@ -291,7 +291,7 @@ export class AuthorizationFormGenerator {
       'PPS-1',
     ];
     if (templateForms.includes(data.formType)) {
-      return await this.generateFormFromTemplate(data);
+      return await this.generateFormFromTemplate(data, keepFieldsEditable);
     }
 
     // For forms without templates, throw an error
@@ -375,7 +375,10 @@ export class AuthorizationFormGenerator {
    * Generate form using official PDF template and TaxFormService
    * Supports: PIT-37, PIT-R, PEL, ZAW-FA, PIT-2, PIT-OP, IFT-1, UPL-1P, and declaration forms
    */
-  private async generateFormFromTemplate(data: AuthorizationFormData): Promise<Blob> {
+  private async generateFormFromTemplate(
+    data: AuthorizationFormData,
+    keepFieldsEditable: boolean = false
+  ): Promise<Blob> {
     const { client, employee, additionalData, formType } = data;
     const year = additionalData?.year || new Date().getFullYear().toString();
 
@@ -507,7 +510,7 @@ export class AuthorizationFormGenerator {
     }
 
     const taxFormService = new TaxFormService();
-    return await taxFormService.fillFormAsBlob(formType, year, formData);
+    return await taxFormService.fillFormAsBlob(formType, year, formData, { keepFieldsEditable });
   }
 
   /**

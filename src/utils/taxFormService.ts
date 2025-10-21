@@ -24,6 +24,11 @@ export interface TaxFormData {
   [key: string]: any;
 }
 
+export interface TaxFormFillingOptions {
+  /** If true, keeps form fields editable instead of flattening them */
+  keepFieldsEditable?: boolean;
+}
+
 export class TaxFormService {
   private mappingCache: Map<string, FormMapping> = new Map();
 
@@ -32,9 +37,15 @@ export class TaxFormService {
    * @param formType Type of form (e.g., 'PIT-37', 'UPL-1')
    * @param year Year of the form (e.g., '2023')
    * @param formData Data to fill into the form
+   * @param options Filling options
    * @returns PDF bytes as Uint8Array
    */
-  async fillForm(formType: string, year: string, formData: TaxFormData): Promise<Uint8Array> {
+  async fillForm(
+    formType: string,
+    year: string,
+    formData: TaxFormData,
+    options: TaxFormFillingOptions = {}
+  ): Promise<Uint8Array> {
     // Load the correct PDF template based on type and year
     const pdfTemplate = await this.loadPdfTemplate(formType, year);
 
@@ -45,7 +56,7 @@ export class TaxFormService {
     const processedData = this.processFormSpecificCalculations(formType, formData, mappings);
 
     // Fill the form
-    return await this.fillPdfForm(pdfTemplate, processedData, mappings);
+    return await this.fillPdfForm(pdfTemplate, processedData, mappings, options);
   }
 
   /**
@@ -65,7 +76,7 @@ export class TaxFormService {
         const arrayBuffer = await response.arrayBuffer();
         return await PDFDocument.load(arrayBuffer);
       }
-    } catch (error) {
+    } catch {
       console.log(`Template not found: ${publicPath}`);
     }
 
@@ -80,7 +91,7 @@ export class TaxFormService {
           const arrayBuffer = await response.arrayBuffer();
           return await PDFDocument.load(arrayBuffer);
         }
-      } catch (error) {
+      } catch {
         console.log(`Fallback template not found: ${formType} 2023`);
       }
     }
@@ -128,7 +139,9 @@ export class TaxFormService {
       return mapping;
     } catch (error) {
       console.error(`Error loading mappings for ${formType}:`, error);
-      throw new Error(`Failed to load mappings for ${formType}`);
+      throw new Error(
+        `Failed to load mappings for ${formType}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -161,7 +174,7 @@ export class TaxFormService {
    */
   private processPIT37Calculations(
     data: TaxFormData,
-    mappings: FormMapping
+    _mappings: FormMapping
   ): Record<string, number> {
     const calculated: Record<string, number> = {};
 
@@ -198,7 +211,7 @@ export class TaxFormService {
    */
   private processPITRCalculations(
     data: TaxFormData,
-    mappings: FormMapping
+    _mappings: FormMapping
   ): Record<string, number> {
     const calculated: Record<string, number> = {};
 
@@ -227,9 +240,22 @@ export class TaxFormService {
   private async fillPdfForm(
     pdfDoc: PDFDocument,
     data: TaxFormData,
-    mappings: FormMapping
+    mappings: FormMapping,
+    options: TaxFormFillingOptions = {}
   ): Promise<Uint8Array> {
     const pages = pdfDoc.getPages();
+    const form = pdfDoc.getForm();
+    const formFields = form.getFields();
+
+    // Check if PDF has interactive form fields
+    const hasAcroformFields = formFields.length > 0;
+
+    // If keepFieldsEditable is true and PDF has Acroform fields, fill them directly
+    if (options.keepFieldsEditable && hasAcroformFields) {
+      return await this.fillAcroformFields(pdfDoc, form, data, mappings);
+    }
+
+    // Otherwise, use coordinate-based filling (legacy method)
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontSize = 10;
 
@@ -270,7 +296,117 @@ export class TaxFormService {
       }
     }
 
-    return await pdfDoc.save();
+    // Save with or without flattening based on options
+    if (options.keepFieldsEditable) {
+      // Save without flattening form fields
+      return await pdfDoc.save({ useObjectStreams: false });
+    } else {
+      // Default behavior - may flatten fields
+      return await pdfDoc.save();
+    }
+  }
+
+  /**
+   * Fill Acroform fields (keeps fields editable)
+   */
+  private async fillAcroformFields(
+    pdfDoc: PDFDocument,
+    form: any,
+    data: TaxFormData,
+    mappings: FormMapping
+  ): Promise<Uint8Array> {
+    const fields = form.getFields();
+
+    // Merge calculated fields with input data
+    const allData = {
+      ...data,
+      ...(data.calculatedFields || {}),
+    };
+
+    // Create a reverse mapping from pdfField to our field name
+    const pdfFieldToDataField: Record<string, string> = {};
+    for (const [dataFieldName, fieldMapping] of Object.entries(mappings.fields)) {
+      if (fieldMapping.pdfField) {
+        pdfFieldToDataField[fieldMapping.pdfField] = dataFieldName;
+      }
+    }
+
+    let filledCount = 0;
+
+    for (const field of fields) {
+      try {
+        const fieldName = field.getName();
+
+        // Try to find matching data using the mapping
+        let value = undefined;
+        const dataFieldName = pdfFieldToDataField[fieldName];
+        if (dataFieldName) {
+          value = allData[dataFieldName];
+        }
+
+        // If no direct mapping match, try case-insensitive matching
+        if (value === undefined) {
+          const lowerFieldName = fieldName.toLowerCase();
+          for (const [key, val] of Object.entries(allData)) {
+            if (
+              key.toLowerCase() === lowerFieldName ||
+              lowerFieldName.includes(key.toLowerCase())
+            ) {
+              value = val;
+              break;
+            }
+          }
+        }
+
+        if (value === undefined || value === null) {
+          continue;
+        }
+
+        // Fill based on field type
+        const fieldType = field.constructor.name;
+
+        if (fieldType === 'PDFTextField') {
+          const textValue = this.formatFieldValue(value);
+          const sanitizedValue = this.sanitizeText(textValue);
+          field.setText(sanitizedValue);
+          filledCount++;
+        } else if (fieldType === 'PDFCheckBox') {
+          if (
+            value === true ||
+            value === 'true' ||
+            value === '1' ||
+            value === 'X' ||
+            value === 'x'
+          ) {
+            field.check();
+          } else {
+            field.uncheck();
+          }
+          filledCount++;
+        } else if (fieldType === 'PDFRadioGroup') {
+          try {
+            field.select(String(value));
+            filledCount++;
+          } catch {
+            console.warn(`Could not select radio option for ${fieldName}: ${value}`);
+          }
+        } else if (fieldType === 'PDFDropdown') {
+          try {
+            field.select(String(value));
+            filledCount++;
+          } catch {
+            console.warn(`Could not select dropdown option for ${fieldName}: ${value}`);
+          }
+        }
+      } catch (error) {
+        console.warn(`Could not fill field ${field.getName()}:`, error);
+      }
+    }
+
+    console.log(`Filled ${filledCount} out of ${fields.length} Acroform fields`);
+
+    // Save without flattening - keep fields editable
+    return await pdfDoc.save({ useObjectStreams: false });
   }
 
   /**
@@ -290,8 +426,13 @@ export class TaxFormService {
   /**
    * Generate a Blob from the filled PDF (for browser download)
    */
-  async fillFormAsBlob(formType: string, year: string, formData: TaxFormData): Promise<Blob> {
-    const pdfBytes = await this.fillForm(formType, year, formData);
+  async fillFormAsBlob(
+    formType: string,
+    year: string,
+    formData: TaxFormData,
+    options: TaxFormFillingOptions = {}
+  ): Promise<Blob> {
+    const pdfBytes = await this.fillForm(formType, year, formData, options);
     return new Blob([pdfBytes], { type: 'application/pdf' });
   }
 

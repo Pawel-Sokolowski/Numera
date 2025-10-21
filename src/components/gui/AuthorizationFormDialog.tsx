@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Switch } from '../ui/switch';
+import { Checkbox } from '../ui/checkbox';
 import { FileText, Info, Eye } from 'lucide-react';
 import { Client, User } from '../../types/client';
 import {
@@ -332,10 +332,10 @@ export function AuthorizationFormDialog({
           </div>
 
           <div className="flex items-center space-x-2">
-            <Switch
+            <Checkbox
               id="keep-editable"
               checked={keepFieldsEditable}
-              onCheckedChange={setKeepFieldsEditable}
+              onCheckedChange={(checked) => setKeepFieldsEditable(checked === true)}
             />
             <Label htmlFor="keep-editable" className="text-sm cursor-pointer">
               Zachowaj pola edytowalne (możesz wypełnić pozostałe pola w PDF)
@@ -352,6 +352,17 @@ export function AuthorizationFormDialog({
               <strong>Formularze zaawansowane</strong> (np. PIT-36, CIT-8) - wypełniane są wszystkie
               dostępne dane klienta
             </p>
+          </div>
+
+          <div className="flex items-center space-x-2 rounded-lg border p-4">
+            <Checkbox
+              id="keepFieldsEditable"
+              checked={keepFieldsEditable}
+              onCheckedChange={(checked) => setKeepFieldsEditable(checked === true)}
+            />
+            <Label htmlFor="keepFieldsEditable" className="text-sm font-normal cursor-pointer">
+              Zachowaj pola formularza edytowalne (umożliwia późniejsze uzupełnianie pól w PDF)
+            </Label>
           </div>
         </div>
 
