@@ -46,7 +46,6 @@ export function AuthorizationFormDialog({
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string>('');
   const [pdfCleanup, setPdfCleanup] = useState<(() => void) | null>(null);
-  const [keepFieldsEditable, setKeepFieldsEditable] = useState<boolean>(false);
 
   // Get forms by category
   const categorizedForms = useMemo(() => {
@@ -353,17 +352,6 @@ export function AuthorizationFormDialog({
               <strong>Formularze zaawansowane</strong> (np. PIT-36, CIT-8) - wypełniane są wszystkie
               dostępne dane klienta
             </p>
-          </div>
-
-          <div className="flex items-center space-x-2 rounded-lg border p-4">
-            <Checkbox
-              id="keepFieldsEditable"
-              checked={keepFieldsEditable}
-              onCheckedChange={(checked) => setKeepFieldsEditable(checked === true)}
-            />
-            <Label htmlFor="keepFieldsEditable" className="text-sm font-normal cursor-pointer">
-              Zachowaj pola formularza edytowalne (umożliwia późniejsze uzupełnianie pól w PDF)
-            </Label>
           </div>
         </div>
 
