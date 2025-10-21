@@ -1,11 +1,12 @@
 import { createWorker, Worker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set up PDF.js worker - use local worker file instead of CDN
-// The worker file is copied from node_modules/pdfjs-dist/build/pdf.worker.min.mjs to public/
+// Set up PDF.js worker - use local worker file with correct base path
+// Respect Vite's base URL configuration for GitHub Pages deployment
 if (typeof window !== 'undefined') {
+  const basePath = import.meta.env.BASE_URL || '/';
   pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    '/pdf.worker.min.mjs',
+    `${basePath}pdf.worker.min.mjs`,
     window.location.origin
   ).href;
 }
