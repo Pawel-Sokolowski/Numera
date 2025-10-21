@@ -128,6 +128,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
     "prepare": "husky",
+    "postinstall": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs 2>/dev/null || true",
     "generate-icons": "node scripts/generate-pwa-icons.js",
     "install:local": "./scripts/install-local.sh",
     "install:server": "./scripts/install-server.sh",
