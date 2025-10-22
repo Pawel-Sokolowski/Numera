@@ -87,9 +87,10 @@ export class PdfFieldDetector {
   private workerSrc: string;
 
   constructor() {
-    // Set up PDF.js worker - use local worker file instead of CDN
-    // The worker file is copied from node_modules/pdfjs-dist/build/pdf.worker.min.mjs to public/
-    this.workerSrc = new URL('/pdf.worker.min.mjs', window.location.origin).href;
+    // Set up PDF.js worker - use local worker file with correct base path
+    // Respect Vite's base URL configuration for GitHub Pages deployment
+    const basePath = import.meta.env.BASE_URL || '/';
+    this.workerSrc = new URL(`${basePath}pdf.worker.min.mjs`, window.location.origin).href;
     if (typeof window !== 'undefined') {
       pdfjsLib.GlobalWorkerOptions.workerSrc = this.workerSrc;
     }
