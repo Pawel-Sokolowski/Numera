@@ -5,6 +5,7 @@ This guide explains how to use the PDF generation system in the Management App.
 ## Overview
 
 The application uses **template-based PDF filling** as the primary approach:
+
 - **pdf-lib** - Template-based PDF filling for official forms (PRIMARY APPROACH)
 - Official PDF templates are placed in `/public/pdf-templates/` directory
 - Forms are filled with data, NOT generated from scratch
@@ -29,24 +30,24 @@ const blob = await generator.generateForm({
     address: {
       street: 'ul. Przykładowa 1',
       zipCode: '00-001',
-      city: 'Warszawa'
+      city: 'Warszawa',
     },
     status: 'aktualny',
-    dateAdded: new Date().toISOString()
+    dateAdded: new Date().toISOString(),
   },
   employee: {
     id: '1',
     firstName: 'Anna',
     lastName: 'Nowak',
     email: 'anna@example.com',
-    role: 'Księgowa'
+    role: 'Księgowa',
   },
   formType: 'UPL-1',
   additionalData: {
     startDate: '2024-01-01',
     endDate: '2024-12-31',
-    taxOffice: 'Urząd Skarbowy Warszawa-Śródmieście'
-  }
+    taxOffice: 'Urząd Skarbowy Warszawa-Śródmieście',
+  },
 });
 
 // Download the PDF
@@ -64,7 +65,7 @@ URL.revokeObjectURL(url);
 const blob = await generator.generateForm({
   client: clientData,
   employee: employeeData,
-  formType: 'PEL'
+  formType: 'PEL',
 });
 ```
 
@@ -81,11 +82,8 @@ const blob = await filler.fillFormAsBlob({
   employee: employeeData,
   startDate: '2024-01-01',
   endDate: '2024-12-31',
-  scope: [
-    'Reprezentowanie przed urzędami',
-    'Składanie deklaracji podatkowych'
-  ],
-  taxOffice: 'US Warszawa-Śródmieście'
+  scope: ['Reprezentowanie przed urzędami', 'Składanie deklaracji podatkowych'],
+  taxOffice: 'US Warszawa-Śródmieście',
 });
 ```
 
@@ -100,27 +98,81 @@ const blob = await filler.fillFormAsBlob({
 
 **No fallback to programmatic generation** - this ensures you always use official, compliant forms.
 
+## Coordinate Mapping for Forms
+
+The UPL-1 form (and other forms that support it) use a `mapping.json` file to define field coordinates. This makes it easy to update field positions without modifying code.
+
+### mapping.json Structure
+
+Each form directory can contain a `mapping.json` file:
+
+```json
+{
+  "version": "2023",
+  "fields": {
+    "principalName": { "pdfField": "mocodawca_nazwa", "page": 1, "x": 150, "y": 720 },
+    "principalNIP": { "pdfField": "mocodawca_nip", "page": 1, "x": 150, "y": 695 },
+    "attorneyName": { "pdfField": "pelnomocnik_nazwa", "page": 1, "x": 150, "y": 560 }
+  },
+  "calculations": {}
+}
+```
+
+### How It Works
+
+1. **Automatic Loading**: The `UPL1PdfFiller` automatically loads coordinates from `mapping.json`
+2. **Caching**: Coordinates are cached after first load for performance
+3. **Fallback**: If mapping file is not available, falls back to hardcoded coordinates
+4. **No Code Changes**: Update field positions by editing the JSON file only
+
+### Example: UPL-1 Form
+
+Location: `/public/pdf-templates/UPL-1/mapping.json`
+
+The UPL1PdfFiller uses this mapping automatically:
+
+```typescript
+import { UPL1PdfFiller } from './utils/upl1PdfFiller';
+
+const filler = new UPL1PdfFiller();
+// Coordinates are loaded from mapping.json automatically
+const blob = await filler.fillFormAsBlob(data);
+```
+
+### Updating Coordinates
+
+To update field positions:
+
+1. Edit `/public/pdf-templates/UPL-1/mapping.json`
+2. Update the x and y values for any field
+3. No code changes needed - the filler loads the new coordinates automatically
+4. Test with `node scripts/test-upl1-coordinates.js`
+
 ## Supported Form Types
 
 All forms require official PDF templates to be placed in `/public/pdf-templates/`:
 
 ### Authorization Forms
+
 - **UPL-1** - Tax office authorization (template-based with pdf-lib)
 - **PEL** - ZUS authorization (template-based with pdf-lib)
 
 ### Tax Forms
+
 - **PIT-36** - Business income tax return (template required)
 - **PIT-37** - Personal income tax return (template required)
 - **PIT-4R** - Flat tax return (template required)
 - **PIT-11** - Income statement (template required)
 
 ### VAT Forms
+
 - **VAT-7** - Monthly VAT declaration (template required)
 - **VAT-7K** - Quarterly VAT declaration (template required)
 - **VAT-R** - VAT registration (template required)
 - **VAT-UE** - Intra-community transactions (template required)
 
 ### Other Forms
+
 - **ZAW-FA** - Tax form selection (template required)
 - **CIT-8** - Corporate income tax (template required)
 - **ZUS-DRA** - Monthly settlement report (template required)
@@ -136,6 +188,7 @@ npx tsx scripts/testPdfMake.ts
 ```
 
 This will generate test PDFs:
+
 - `test-output-upl1-pdfmake.pdf`
 - `test-output-pel-pdfmake.pdf`
 
@@ -144,16 +197,19 @@ This will generate test PDFs:
 All three libraries support Polish characters, but with different approaches:
 
 ### pdfmake (Best)
+
 - Uses Roboto font with full Unicode support
 - Perfect rendering: ą, ć, ę, ł, ń, ó, ś, ź, ż
 - No character conversion needed
 
 ### pdf-lib (Good)
+
 - Uses Helvetica standard font
 - Characters are sanitized (converted to ASCII equivalents)
 - ą→a, ć→c, ę→e, etc.
 
 ### jsPDF (Good)
+
 - Uses Helvetica standard font
 - Similar to pdf-lib character handling
 
@@ -176,6 +232,7 @@ try {
 ## Browser Compatibility
 
 All PDF libraries work in modern browsers:
+
 - ✅ Chrome 90+
 - ✅ Firefox 88+
 - ✅ Safari 14+
@@ -184,11 +241,13 @@ All PDF libraries work in modern browsers:
 ## Performance
 
 ### File Sizes
+
 - **pdfmake PDFs:** ~30-40 KB (programmatically generated)
 - **pdf-lib PDFs:** Varies based on template
 - **jsPDF PDFs:** ~20-50 KB
 
 ### Generation Speed
+
 - All libraries generate PDFs in < 1 second
 - No server-side processing required
 - All generation happens in the browser
@@ -198,18 +257,21 @@ All PDF libraries work in modern browsers:
 ### PDF Not Generated
 
 **Check 1:** Is the form type supported?
+
 ```typescript
 const metadata = FORM_METADATA[formType];
 console.log('Form supported:', metadata !== undefined);
 ```
 
 **Check 2:** Are all required fields provided?
+
 ```typescript
 const metadata = FORM_METADATA[formType];
 console.log('Required fields:', metadata.requiredFields);
 ```
 
 **Check 3:** Is pdfmake installed?
+
 ```bash
 npm list pdfmake
 ```
@@ -217,6 +279,7 @@ npm list pdfmake
 ### Polish Characters Not Displaying
 
 If using pdf-lib and characters don't display:
+
 - This is expected behavior (character sanitization)
 - Switch to pdfmake for perfect Polish character support
 - Or accept the ASCII conversion (ą→a)
@@ -224,6 +287,7 @@ If using pdf-lib and characters don't display:
 ### Template Not Found (pdf-lib)
 
 If you see "Failed to load PDF template":
+
 1. Check if template exists in `/public/pdf-templates/`
 2. Copy official template from PDFFile: `cp PDFFile/upl-1_06-08-2.pdf public/pdf-templates/UPL-1/2023/UPL-1_2023.pdf`
 3. System will automatically fallback to pdfmake
@@ -233,6 +297,7 @@ If you see "Failed to load PDF template":
 The pdfmake library includes fonts, which adds ~800KB to the bundle.
 
 To reduce bundle size:
+
 ```javascript
 // In vite.config.ts
 export default {
@@ -240,12 +305,12 @@ export default {
     rollupOptions: {
       output: {
         manualChunks: {
-          'pdfmake-vendor': ['pdfmake', 'pdfmake/build/vfs_fonts']
-        }
-      }
-    }
-  }
-}
+          'pdfmake-vendor': ['pdfmake', 'pdfmake/build/vfs_fonts'],
+        },
+      },
+    },
+  },
+};
 ```
 
 ## Adding New Forms
@@ -253,13 +318,14 @@ export default {
 To add a new form type using pdfmake:
 
 1. **Define the form type:**
+
 ```typescript
 // In authorizationFormGenerator.ts
-export type FormType = 
-  | 'UPL-1' | 'PEL' | 'YOUR-NEW-FORM';
+export type FormType = 'UPL-1' | 'PEL' | 'YOUR-NEW-FORM';
 ```
 
 2. **Add form metadata:**
+
 ```typescript
 export const FORM_METADATA: Record<FormType, FormMetadata> = {
   // ... existing forms
@@ -270,18 +336,19 @@ export const FORM_METADATA: Record<FormType, FormMetadata> = {
     complexity: 'simple',
     category: 'pelnomocnictwa',
     requiredFields: ['firstName', 'lastName'],
-    optionalFields: ['companyName']
-  }
+    optionalFields: ['companyName'],
+  },
 };
 ```
 
 3. **Create form generator:**
+
 ```typescript
 // In pdfMakeFiller.ts
 export class YourFormGenerator {
   async generateForm(data: any): Promise<Blob> {
     const pdfMakeLib = await getPdfMake();
-    
+
     return new Promise((resolve, reject) => {
       const docDefinition = {
         pageSize: 'A4',
@@ -290,10 +357,10 @@ export class YourFormGenerator {
           // ... your form content
         ],
         styles: {
-          header: { fontSize: 18, bold: true }
-        }
+          header: { fontSize: 18, bold: true },
+        },
       };
-      
+
       const pdfDocGenerator = pdfMakeLib.createPdf(docDefinition);
       pdfDocGenerator.getBlob((blob: Blob) => resolve(blob));
     });
@@ -302,6 +369,7 @@ export class YourFormGenerator {
 ```
 
 4. **Add to generateForm method:**
+
 ```typescript
 async generateForm(data: AuthorizationFormData): Promise<Blob> {
   if (data.formType === 'YOUR-NEW-FORM') {
@@ -318,8 +386,8 @@ async generateForm(data: AuthorizationFormData): Promise<Blob> {
 
 ```typescript
 class PDFMakeUPL1Filler {
-  async fillForm(data: UPL1Data): Promise<Uint8Array>
-  async fillFormAsBlob(data: UPL1Data): Promise<Blob>
+  async fillForm(data: UPL1Data): Promise<Uint8Array>;
+  async fillFormAsBlob(data: UPL1Data): Promise<Blob>;
 }
 
 interface UPL1Data {
@@ -336,7 +404,7 @@ interface UPL1Data {
 
 ```typescript
 class PDFMakeFormGenerator {
-  async generatePELForm(client: Client, employee: User): Promise<Blob>
+  async generatePELForm(client: Client, employee: User): Promise<Blob>;
 }
 ```
 
@@ -344,8 +412,8 @@ class PDFMakeFormGenerator {
 
 ```typescript
 class AuthorizationFormGenerator {
-  async generateForm(data: AuthorizationFormData): Promise<Blob>
-  async downloadForm(data: AuthorizationFormData): Promise<void>
+  async generateForm(data: AuthorizationFormData): Promise<Blob>;
+  async downloadForm(data: AuthorizationFormData): Promise<void>;
 }
 
 interface AuthorizationFormData {
@@ -380,6 +448,7 @@ interface AuthorizationFormData {
 ## Support
 
 For issues or questions:
+
 1. Check this guide
 2. Review [PDF_LIBRARY_IMPROVEMENT.md](../fixes/PDF_LIBRARY_IMPROVEMENT.md)
 3. Run test suite: `npx tsx scripts/testPdfMake.ts`
