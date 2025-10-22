@@ -68,9 +68,51 @@ const UPL1_FIELD_COORDINATES = {
 
 export class UPL1PdfFiller {
   private pdfTemplatePath: string;
+  private coordinatesCache: Record<string, { x: number; y: number }> | null = null;
 
   constructor(pdfTemplatePath: string = '/pdf-templates/UPL-1/2023/UPL-1_2023.pdf') {
     this.pdfTemplatePath = pdfTemplatePath;
+  }
+
+  /**
+   * Load coordinates from the mapping.json file
+   * Falls back to hardcoded coordinates if mapping file is not available
+   */
+  private async loadCoordinates(): Promise<Record<string, { x: number; y: number }>> {
+    // Return cached coordinates if already loaded
+    if (this.coordinatesCache) {
+      return this.coordinatesCache;
+    }
+
+    try {
+      // Try to load from mapping.json
+      const mappingPath = '/pdf-templates/UPL-1/mapping.json';
+      const response = await fetch(mappingPath);
+
+      if (response.ok) {
+        const mapping = await response.json();
+
+        // Extract coordinates from mapping file
+        const coordinates: Record<string, { x: number; y: number }> = {};
+        for (const [fieldName, fieldData] of Object.entries(mapping.fields)) {
+          const field = fieldData as any;
+          if (field.x !== undefined && field.y !== undefined) {
+            coordinates[fieldName] = { x: field.x, y: field.y };
+          }
+        }
+
+        console.log('UPL-1 coordinates loaded from mapping.json');
+        this.coordinatesCache = coordinates;
+        return coordinates;
+      }
+    } catch (error) {
+      console.warn('Failed to load UPL-1 mapping.json, using hardcoded coordinates:', error);
+    }
+
+    // Fallback to hardcoded coordinates
+    console.log('Using hardcoded UPL-1 coordinates');
+    this.coordinatesCache = UPL1_FIELD_COORDINATES;
+    return UPL1_FIELD_COORDINATES;
   }
 
   /**
@@ -80,6 +122,9 @@ export class UPL1PdfFiller {
    * @returns PDF bytes as Uint8Array
    */
   async fillForm(data: UPL1Data, options: UPL1FillingOptions = {}): Promise<Uint8Array> {
+    // Load coordinates from mapping.json or fallback to hardcoded
+    const coordinates = await this.loadCoordinates();
+
     // Load the template PDF from public folder
     // In browser, fetch from the public URL
     // Try multiple paths for better compatibility
@@ -163,55 +208,31 @@ export class UPL1PdfFiller {
     const { client } = data;
 
     const clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim();
-    if (clientName) {
-      drawText(
-        clientName,
-        UPL1_FIELD_COORDINATES.principalName.x,
-        UPL1_FIELD_COORDINATES.principalName.y
-      );
+    if (clientName && coordinates.principalName) {
+      drawText(clientName, coordinates.principalName.x, coordinates.principalName.y);
     }
 
-    if (client.companyName) {
-      drawText(
-        client.companyName,
-        UPL1_FIELD_COORDINATES.principalName.x,
-        UPL1_FIELD_COORDINATES.principalName.y - 15
-      );
+    if (client.companyName && coordinates.principalName) {
+      drawText(client.companyName, coordinates.principalName.x, coordinates.principalName.y - 15);
     }
 
-    if (client.nip) {
-      drawText(
-        client.nip,
-        UPL1_FIELD_COORDINATES.principalNIP.x,
-        UPL1_FIELD_COORDINATES.principalNIP.y
-      );
+    if (client.nip && coordinates.principalNIP) {
+      drawText(client.nip, coordinates.principalNIP.x, coordinates.principalNIP.y);
     }
 
-    if (client.regon) {
-      drawText(
-        client.regon,
-        UPL1_FIELD_COORDINATES.principalREGON.x,
-        UPL1_FIELD_COORDINATES.principalREGON.y
-      );
+    if (client.regon && coordinates.principalREGON) {
+      drawText(client.regon, coordinates.principalREGON.x, coordinates.principalREGON.y);
     }
 
     if (client.address) {
       const street = client.address.street || '';
-      if (street) {
-        drawText(
-          street,
-          UPL1_FIELD_COORDINATES.principalAddress.x,
-          UPL1_FIELD_COORDINATES.principalAddress.y
-        );
+      if (street && coordinates.principalAddress) {
+        drawText(street, coordinates.principalAddress.x, coordinates.principalAddress.y);
       }
 
       const cityLine = `${client.address.zipCode || ''} ${client.address.city || ''}`.trim();
-      if (cityLine) {
-        drawText(
-          cityLine,
-          UPL1_FIELD_COORDINATES.principalCity.x,
-          UPL1_FIELD_COORDINATES.principalCity.y
-        );
+      if (cityLine && coordinates.principalCity) {
+        drawText(cityLine, coordinates.principalCity.x, coordinates.principalCity.y);
       }
     }
 
@@ -219,20 +240,12 @@ export class UPL1PdfFiller {
     const { employee } = data;
 
     const employeeName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
-    if (employeeName) {
-      drawText(
-        employeeName,
-        UPL1_FIELD_COORDINATES.attorneyName.x,
-        UPL1_FIELD_COORDINATES.attorneyName.y
-      );
+    if (employeeName && coordinates.attorneyName) {
+      drawText(employeeName, coordinates.attorneyName.x, coordinates.attorneyName.y);
     }
 
-    if (employee.pesel) {
-      drawText(
-        employee.pesel,
-        UPL1_FIELD_COORDINATES.attorneyPESEL.x,
-        UPL1_FIELD_COORDINATES.attorneyPESEL.y
-      );
+    if (employee.pesel && coordinates.attorneyPESEL) {
+      drawText(employee.pesel, coordinates.attorneyPESEL.x, coordinates.attorneyPESEL.y);
     }
 
     // Fill scope of authorization
@@ -252,12 +265,12 @@ export class UPL1PdfFiller {
         ? [data.scope]
         : defaultScope;
     const scopeCoordinates = [
-      UPL1_FIELD_COORDINATES.scope1,
-      UPL1_FIELD_COORDINATES.scope2,
-      UPL1_FIELD_COORDINATES.scope3,
-      UPL1_FIELD_COORDINATES.scope4,
-      UPL1_FIELD_COORDINATES.scope5,
-      UPL1_FIELD_COORDINATES.scope6,
+      coordinates.scope1,
+      coordinates.scope2,
+      coordinates.scope3,
+      coordinates.scope4,
+      coordinates.scope5,
+      coordinates.scope6,
     ];
 
     // Then safely use slice and forEach
@@ -269,18 +282,16 @@ export class UPL1PdfFiller {
 
     // Fill dates
     const currentDate = data.startDate || new Date().toLocaleDateString('pl-PL');
-    drawText(currentDate, UPL1_FIELD_COORDINATES.issueDate.x, UPL1_FIELD_COORDINATES.issueDate.y);
-
-    if (data.startDate) {
-      drawText(
-        data.startDate,
-        UPL1_FIELD_COORDINATES.startDate.x,
-        UPL1_FIELD_COORDINATES.startDate.y
-      );
+    if (coordinates.issueDate) {
+      drawText(currentDate, coordinates.issueDate.x, coordinates.issueDate.y);
     }
 
-    if (data.endDate) {
-      drawText(data.endDate, UPL1_FIELD_COORDINATES.endDate.x, UPL1_FIELD_COORDINATES.endDate.y);
+    if (data.startDate && coordinates.startDate) {
+      drawText(data.startDate, coordinates.startDate.x, coordinates.startDate.y);
+    }
+
+    if (data.endDate && coordinates.endDate) {
+      drawText(data.endDate, coordinates.endDate.x, coordinates.endDate.y);
     }
 
     // Save the filled PDF
